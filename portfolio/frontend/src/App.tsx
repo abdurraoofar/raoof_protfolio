@@ -358,10 +358,13 @@ export function App() {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const isDark = theme === 'dark';
 
-  // Admin Authentication State (username: admin, password: 1234)
+  // Admin Authentication State
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(() => {
     try {
-      return sessionStorage.getItem('portfolio_admin_auth') === 'true';
+      return (
+        sessionStorage.getItem('portfolio_admin_auth') === 'true' &&
+        Boolean(sessionStorage.getItem('portfolio_admin_token'))
+      );
     } catch {
       return false;
     }
@@ -733,23 +736,13 @@ export function App() {
         fetchPortfolioData();
         setIsLoggingIn(false);
         return;
+      } else {
+        setAdminLoginError(data?.error?.message || 'Invalid administrator credentials.');
+        setIsLoggingIn(false);
+        return;
       }
     } catch {
-      // Backend offline fallback
-    }
-
-    if (
-      (adminUsername.trim().toLowerCase() === 'admin' ||
-        adminUsername.trim().toLowerCase() === 'admin@portfolio.local') &&
-      adminPassword === '1234'
-    ) {
-      setIsAdminAuthenticated(true);
-      try {
-        sessionStorage.setItem('portfolio_admin_auth', 'true');
-      } catch {}
-      showToast('Authenticated as Admin');
-    } else {
-      setAdminLoginError('Invalid credentials. (Hint: username: admin / password: 1234)');
+      setAdminLoginError('Could not connect to the backend API. Please verify server status.');
     }
     setIsLoggingIn(false);
   };

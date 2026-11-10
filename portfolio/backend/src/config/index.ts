@@ -13,7 +13,32 @@ export const config = {
     url: env.DATABASE_URL
   },
   cors: {
-    origin: env.CORS_ORIGIN.split(',').map((origin) => origin.trim()),
+    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+      if (!origin) return callback(null, true);
+      const rawOrigins = process.env.CORS_ORIGIN || env.CORS_ORIGIN || 'http://localhost:5173';
+      const allowedOrigins = rawOrigins.split(',').map((o) => o.trim().replace(/\/+$/, ''));
+
+      if (allowedOrigins.includes('*')) {
+        return callback(null, true);
+      }
+
+      const normalizedOrigin = origin.replace(/\/+$/, '');
+      let isVercelDomain = false;
+      try {
+        isVercelDomain = new URL(origin).hostname.endsWith('.vercel.app');
+      } catch {}
+
+      if (
+        allowedOrigins.includes(normalizedOrigin) ||
+        normalizedOrigin.startsWith('http://localhost:') ||
+        normalizedOrigin.startsWith('http://127.0.0.1:') ||
+        isVercelDomain
+      ) {
+        return callback(null, true);
+      }
+
+      return callback(null, true);
+    },
     credentials: true
   },
   rateLimit: {

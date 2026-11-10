@@ -22,7 +22,10 @@ async function main() {
 
   // 2. Admin User
   const adminEmail = process.env.ADMIN_EMAIL || 'admin@portfolio.local';
-  const rawPassword = process.env.ADMIN_INITIAL_PASSWORD || '1234';
+  const rawPassword = process.env.ADMIN_INITIAL_PASSWORD;
+  if (!rawPassword) {
+    throw new Error('ADMIN_INITIAL_PASSWORD environment variable is required to seed the administrator account.');
+  }
   const passwordHash = await bcrypt.hash(rawPassword, 10);
 
   const admin = await prisma.admin.create({

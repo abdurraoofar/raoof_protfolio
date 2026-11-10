@@ -6,8 +6,10 @@
   "main": "dist/server.js",
   "scripts": {
     "dev": "NODE_ENV=development node scripts/dev-server.cjs",
-    "build": "node scripts/build.cjs",
+    "build": "npx prisma generate && tsc",
+    "build:safe": "node scripts/build.cjs",
     "start": "node dist/server.js",
+    "deploy:migrate": "npx prisma migrate deploy && npx prisma db seed",
     "lint": "node scripts/lint.cjs",
     "typecheck": "npx tsc --noEmit",
     "prisma:generate": "npx prisma generate",

@@ -7,12 +7,14 @@ import { prisma } from './config/database';
 const app = createApp();
 const server = http.createServer(app);
 
-server.listen(config.server.port, () => {
+const port = Number(process.env.PORT) || config.server.port || 5000;
+
+server.listen(port, '0.0.0.0', () => {
   logger.info(
-    `Portfolio Backend Server listening on http://localhost:${config.server.port}${config.server.apiPrefix}`,
+    `Portfolio Backend Server listening on http://0.0.0.0:${port}${config.server.apiPrefix}`,
     {
       environment: config.env,
-      port: config.server.port
+      port
     }
   );
 });
