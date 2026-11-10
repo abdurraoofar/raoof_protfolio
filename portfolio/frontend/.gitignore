@@ -1,0 +1,15 @@
+# Dependencies
+node_modules/
+
+# Production Build
+dist/
+
+# Environment (Only public non-secret client variables)
+.env
+.env.*
+!.env.example
+
+# Logs & Temporary
+logs/
+*.log
+*.tmp

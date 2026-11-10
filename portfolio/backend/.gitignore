@@ -1,0 +1,16 @@
+# Dependencies
+node_modules/
+
+# Production Build
+dist/
+*.tsbuildinfo
+
+# Environment & Secrets (NEVER commit real environments or secrets)
+.env
+.env.*
+!.env.example
+
+# Logs & Temporary
+logs/
+*.log
+*.tmp
