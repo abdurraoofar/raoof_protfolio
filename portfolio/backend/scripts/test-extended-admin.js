@@ -35,7 +35,7 @@ async function runExtendedAdminChecks() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' }
     },
-    { email: 'admin@portfolio.local', password: '1234' }
+    { email: process.env.ADMIN_EMAIL || 'admin@portfolio.local', password: process.env.ADMIN_INITIAL_PASSWORD || '1234' }
   );
   const token = loginRes.data?.data?.accessToken;
   if (!token) throw new Error('Could not login as admin');

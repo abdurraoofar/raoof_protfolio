@@ -21,7 +21,10 @@ async function main() {
   await prisma.admin.deleteMany({});
 
   // 2. Admin User
-  const adminEmail = process.env.ADMIN_EMAIL || 'admin@portfolio.local';
+  const adminEmail = process.env.ADMIN_EMAIL;
+  if (!adminEmail) {
+    throw new Error('ADMIN_EMAIL environment variable is required to seed the administrator account.');
+  }
   const rawPassword = process.env.ADMIN_INITIAL_PASSWORD;
   if (!rawPassword) {
     throw new Error('ADMIN_INITIAL_PASSWORD environment variable is required to seed the administrator account.');

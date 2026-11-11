@@ -253,8 +253,8 @@ async function runAllChecks() {
         headers: { 'Content-Type': 'application/json' }
       },
       {
-        email: 'admin@portfolio.local',
-        password: '1234'
+        email: process.env.ADMIN_EMAIL || 'admin@portfolio.local',
+        password: process.env.ADMIN_INITIAL_PASSWORD || '1234'
       }
     );
     const accessToken = loginRes.data?.data?.accessToken;
