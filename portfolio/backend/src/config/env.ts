@@ -24,10 +24,10 @@ const envSchema = z.object({
   JWT_REFRESH_SECRET: z.string().min(32, 'JWT_REFRESH_SECRET must be at least 32 characters'),
   JWT_ACCESS_EXPIRES_IN: z.string().default('15m'),
   JWT_REFRESH_EXPIRES_IN: z.string().default('7d'),
-  STORAGE_PROVIDER: z.enum(['cloudinary', 'supabase']).default('cloudinary'),
-  CLOUDINARY_CLOUD_NAME: z.string().min(1),
-  CLOUDINARY_API_KEY: z.string().min(1),
-  CLOUDINARY_API_SECRET: z.string().min(1),
+  STORAGE_PROVIDER: z.enum(['cloudinary', 'supabase', 'local']).default('local'),
+  CLOUDINARY_CLOUD_NAME: z.string().optional().default('placeholder-cloud'),
+  CLOUDINARY_API_KEY: z.string().optional().default('placeholder-key'),
+  CLOUDINARY_API_SECRET: z.string().optional().default('placeholder-secret'),
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info')
 });
 
