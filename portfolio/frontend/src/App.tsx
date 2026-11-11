@@ -43,7 +43,10 @@ import {
   Moon,
   ChevronDown,
   Menu,
-  Award
+  Award,
+  Image as ImageIcon,
+  Camera,
+  Maximize2
 } from 'lucide-react';
 
 type EnvMode = 'development' | 'production';
@@ -396,6 +399,44 @@ const INITIAL_CERTIFICATIONS: CertificationItem[] = [
   }
 ];
 
+const compressCertificateImage = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new window.Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        const maxDimension = 1200;
+        if (width > maxDimension || height > maxDimension) {
+          if (width > height) {
+            height = Math.round((height * maxDimension) / width);
+            width = maxDimension;
+          } else {
+            width = Math.round((width * maxDimension) / height);
+            height = maxDimension;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve(e.target?.result as string);
+          return;
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+        const compressed = canvas.toDataURL('image/jpeg', 0.85);
+        resolve(compressed);
+      };
+      img.onerror = reject;
+      img.src = e.target?.result as string;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+};
+
 const getRouteFromUrl = (): PageRoute => {
   if (typeof window === 'undefined') return 'home';
   const path = window.location.pathname.toLowerCase().replace(/\/+$/, '') || '/';
@@ -548,13 +589,24 @@ export function App() {
   const [newCertDate, setNewCertDate] = useState('');
   const [newCertId, setNewCertId] = useState('');
   const [newCertUrl, setNewCertUrl] = useState('');
+  const [newCertImageUrl, setNewCertImageUrl] = useState('');
   const [newCertDesc, setNewCertDesc] = useState('');
+  const [isCompressingImage, setIsCompressingImage] = useState(false);
   const [editingCertId, setEditingCertId] = useState<string | null>(null);
   const [editingCertTitle, setEditingCertTitle] = useState('');
   const [editingCertIssuer, setEditingCertIssuer] = useState('');
   const [editingCertDate, setEditingCertDate] = useState('');
   const [editingCertUrl, setEditingCertUrl] = useState('');
+  const [editingCertImageUrl, setEditingCertImageUrl] = useState('');
   const [editingCertDesc, setEditingCertDesc] = useState('');
+  const [selectedCertPreview, setSelectedCertPreview] = useState<{
+    title: string;
+    issuer: string;
+    imageUrl: string;
+    credentialId?: string;
+    credentialUrl?: string;
+  } | null>(null);
+  const [adminMobileMenuOpen, setAdminMobileMenuOpen] = useState(false);
 
   const API_BASE = (import.meta.env?.VITE_API_BASE_URL as string) || 'http://localhost:5000/api/v1';
   const [adminToken, setAdminToken] = useState<string>(() => {
@@ -1504,6 +1556,38 @@ export function App() {
     showToast('Removed education from PostgreSQL');
   };
 
+  const handleCertImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setIsCompressingImage(true);
+      const compressedDataUrl = await compressCertificateImage(file);
+      setNewCertImageUrl(compressedDataUrl);
+      showToast('Certificate photo attached successfully');
+    } catch (err) {
+      console.warn('Image processing failed:', err);
+      showToast('Failed to process image');
+    } finally {
+      setIsCompressingImage(false);
+    }
+  };
+
+  const handleEditCertImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setIsCompressingImage(true);
+      const compressedDataUrl = await compressCertificateImage(file);
+      setEditingCertImageUrl(compressedDataUrl);
+      showToast('Certificate photo updated');
+    } catch (err) {
+      console.warn('Image processing failed:', err);
+      showToast('Failed to process image');
+    } finally {
+      setIsCompressingImage(false);
+    }
+  };
+
   const handleAddCertification = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCertTitle.trim() || !newCertIssuer.trim()) return;
@@ -1514,6 +1598,7 @@ export function App() {
       issueDate: newCertDate.trim() || undefined,
       credentialId: newCertId.trim() || undefined,
       credentialUrl: newCertUrl.trim() || undefined,
+      imageUrl: newCertImageUrl.trim() || undefined,
       description: newCertDesc.trim() || undefined,
       displayOrder: certifications.length + 1
     };
@@ -1536,6 +1621,7 @@ export function App() {
     setNewCertDate('');
     setNewCertId('');
     setNewCertUrl('');
+    setNewCertImageUrl('');
     setNewCertDesc('');
     showToast(`Added certification "${payload.title}" to PostgreSQL`);
   };
@@ -1563,6 +1649,7 @@ export function App() {
       issuer: editingCertIssuer.trim() || cert.issuer,
       issueDate: editingCertDate.trim() || cert.issueDate,
       credentialUrl: editingCertUrl.trim() || cert.credentialUrl,
+      imageUrl: editingCertImageUrl.trim() || cert.imageUrl,
       description: editingCertDesc.trim() || cert.description
     };
     try {
@@ -1580,6 +1667,7 @@ export function App() {
       prev.map((c) => (c.id === id ? { ...c, ...payload } : c))
     );
     setEditingCertId(null);
+    setEditingCertImageUrl('');
     showToast('Updated certification in PostgreSQL');
   };
 
@@ -1602,13 +1690,34 @@ export function App() {
       )}
 
       {/* =====================================================================
-          PUBLIC TOP NAVIGATION (Logo-free, Clean Architectural Layout)
+          PUBLIC TOP NAVIGATION (Responsive Header & Polished Mobile Drawer)
          ===================================================================== */}
       {currentPage !== 'admin' && (
         <header className={`sticky top-0 z-30 backdrop-blur-md border-b transition-colors ${ui.navBg}`}>
           <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-            {/* Primary Navigation Links */}
-            <nav className="hidden md:flex items-center gap-8 text-sm">
+            {/* Brand Logo & Name */}
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setCurrentPage('home')}
+                className="flex items-center gap-2.5 group text-left"
+              >
+                <div className="w-8 h-8 rounded-lg bg-[#2563EB] text-white font-bold text-xs flex items-center justify-center shadow-xs">
+                  AR
+                </div>
+                <div className="flex flex-col">
+                  <span className={`font-bold text-sm tracking-tight leading-none ${ui.heading}`}>
+                    Abdur Raoof
+                  </span>
+                  <span className={`text-[10px] font-mono leading-none pt-1 ${ui.muted}`}>
+                    Full-Stack Dev
+                  </span>
+                </div>
+              </button>
+            </div>
+
+            {/* Primary Desktop Navigation Links */}
+            <nav className="hidden md:flex items-center gap-7 text-sm ml-6">
               {[
                 { id: 'home', label: 'Home' },
                 { id: 'about', label: 'About' },
@@ -1641,10 +1750,11 @@ export function App() {
               })}
             </nav>
 
-            {/* Right Controls: Segmented Light/Dark Switcher & Resume Action */}
-            <div className="flex items-center gap-3 ml-auto md:ml-0">
+            {/* Right Controls: Theme Switcher & Actions */}
+            <div className="flex items-center gap-2 sm:gap-3">
+              {/* Desktop Theme Toggle Pill */}
               <div
-                className={`inline-flex items-center rounded-lg p-0.5 border ${
+                className={`hidden md:inline-flex items-center rounded-lg p-0.5 border ${
                   isDark ? 'bg-[#121621] border-[#252C3E]' : 'bg-[#F3F4F6] border-[#E5E7EB]'
                 }`}
               >
@@ -1676,10 +1786,21 @@ export function App() {
                 </button>
               </div>
 
+              {/* Mobile Single-Button Theme Toggle */}
+              <button
+                type="button"
+                onClick={toggleTheme}
+                title="Toggle Theme"
+                className={`md:hidden w-9 h-9 rounded-xl border flex items-center justify-center transition ${ui.secondaryBtn}`}
+              >
+                {isDark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-gray-700" />}
+              </button>
+
+              {/* Desktop Resume Download */}
               <button
                 type="button"
                 onClick={() => setShowResumeModal(true)}
-                className={`hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition ${
+                className={`hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition ${
                   isDark
                     ? 'bg-[#FFFFFF] hover:bg-gray-200 text-[#090B10]'
                     : 'bg-[#111827] hover:bg-gray-800 text-[#FFFFFF]'
@@ -1688,45 +1809,69 @@ export function App() {
                 <span>Download CV</span>
                 <Download className="w-3.5 h-3.5" />
               </button>
-            </div>
 
-            {/* Mobile Menu Button */}
-            <button
-              type="button"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className={`md:hidden p-2 rounded-lg ml-2 ${
-                isDark ? 'text-gray-300 hover:bg-[#161B26]' : 'text-gray-600 hover:bg-[#F3F4F6]'
-              }`}
-            >
-              <Menu className="w-5 h-5" />
-            </button>
+              {/* Mobile Hamburger Button */}
+              <button
+                type="button"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                aria-label="Toggle navigation menu"
+                className={`md:hidden w-9 h-9 rounded-xl border flex items-center justify-center transition ${ui.secondaryBtn}`}
+              >
+                {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+              </button>
+            </div>
           </div>
 
+          {/* Polished Mobile Drawer */}
           {mobileMenuOpen && (
             <div
-              className={`md:hidden border-t px-4 pt-2 pb-4 space-y-1 ${
+              className={`md:hidden border-t px-4 pt-3 pb-5 space-y-4 shadow-2xl ${
                 isDark ? 'bg-[#090B10] border-[#1C202B]' : 'bg-white border-gray-100'
               }`}
             >
-              {(['home', 'about', 'projects', 'certifications', 'contact'] as PageRoute[]).map((route) => (
-                <button
-                  key={route}
-                  type="button"
+              <div className="space-y-1">
+                {(['home', 'about', 'projects', 'certifications', 'contact'] as PageRoute[]).map((route) => (
+                  <button
+                    key={route}
+                    type="button"
+                    onClick={() => {
+                      setCurrentPage(route);
+                      setMobileMenuOpen(false);
+                    }}
+                    className={`block w-full text-left px-3.5 py-2.5 rounded-xl text-sm font-semibold capitalize transition ${
+                      currentPage === route
+                        ? 'bg-[#2563EB]/15 text-[#3B82F6]'
+                        : isDark
+                        ? 'text-gray-300 hover:bg-[#141824]'
+                        : 'text-gray-700 hover:bg-[#F3F4F6]'
+                    }`}
+                  >
+                    {route}
+                  </button>
+                ))}
+              </div>
+
+              <div className={`pt-3 border-t space-y-2.5 ${ui.divider}`}>
+                <a
+                  href="/Abdur_Raoof_Resume.pdf"
+                  download="Abdur_Raoof_Resume.pdf"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   onClick={() => {
-                    setCurrentPage(route);
                     setMobileMenuOpen(false);
+                    showToast('Downloading resume...');
                   }}
-                  className={`block w-full text-left px-3 py-2 rounded-lg text-sm font-medium capitalize ${
-                    currentPage === route
-                      ? 'bg-[#2563EB]/15 text-[#3B82F6]'
-                      : isDark
-                      ? 'text-gray-300 hover:bg-[#141824]'
-                      : 'text-gray-700 hover:bg-[#F3F4F6]'
-                  }`}
+                  className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-semibold text-xs shadow-sm transition"
                 >
-                  {route}
-                </button>
-              ))}
+                  <Download className="w-4 h-4" />
+                  <span>Download Resume (PDF)</span>
+                </a>
+
+                <div className="flex items-center justify-between text-xs px-1 text-gray-500 dark:text-gray-400">
+                  <span className="truncate max-w-[200px]">{profile.email}</span>
+                  <span className="text-[11px] font-mono font-medium">Chennai, IN</span>
+                </div>
+              </div>
             </div>
           )}
         </header>
@@ -1737,30 +1882,30 @@ export function App() {
          ===================================================================== */}
       {currentPage === 'home' && (
         <main className="max-w-6xl mx-auto px-4 sm:px-6">
-          <section className="py-10 sm:py-16 lg:py-20">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-8 items-center">
+          <section className="py-8 sm:py-16 lg:py-20">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-8 items-center">
               {/* Left Column: High-Contrast Typography & Direct Actions */}
-              <div className="lg:col-span-6 space-y-6">
+              <div className="lg:col-span-6 space-y-5 sm:space-y-6">
                 <div
-                  className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium border ${
+                  className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium border max-w-full truncate ${
                     isDark
                       ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
                       : 'bg-emerald-50 border-emerald-200 text-emerald-800'
                   }`}
                 >
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  <span>{profile.statusBadge}</span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                  <span className="truncate">{profile.statusBadge}</span>
                 </div>
 
                 <div className="space-y-2">
                   <h1
-                    className={`text-4xl sm:text-5xl lg:text-[54px] font-bold tracking-tight leading-[1.08] ${ui.heading}`}
+                    className={`text-3xl sm:text-5xl lg:text-[54px] font-extrabold tracking-tight leading-[1.12] ${ui.heading}`}
                   >
                     Hi, I&apos;m
                     <br />
                     <span className={isDark ? 'text-[#60A5FA]' : 'text-[#2563EB]'}>{profile.name}</span>
                   </h1>
-                  <h2 className={`text-xl sm:text-2xl font-semibold pt-1 ${ui.subheading}`}>
+                  <h2 className={`text-lg sm:text-2xl font-semibold pt-0.5 sm:pt-1 ${ui.subheading}`}>
                     {profile.role}
                   </h2>
                 </div>
@@ -1770,11 +1915,11 @@ export function App() {
                 </p>
 
                 {/* Primary & Secondary Actions */}
-                <div className="flex flex-wrap items-center gap-3.5 pt-1">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-1 w-full sm:w-auto">
                   <button
                     type="button"
                     onClick={() => setCurrentPage('projects')}
-                    className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-semibold text-sm shadow-sm transition"
+                    className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-semibold text-sm shadow-sm transition w-full sm:w-auto"
                   >
                     <span>View Projects</span>
                     <ArrowRight className="w-4 h-4" />
@@ -1782,7 +1927,7 @@ export function App() {
                   <button
                     type="button"
                     onClick={() => setShowResumeModal(true)}
-                    className={`inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition ${ui.secondaryBtn}`}
+                    className={`inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition w-full sm:w-auto ${ui.secondaryBtn}`}
                   >
                     <span>Download Resume</span>
                     <Download className="w-4 h-4 text-[#3B82F6]" />
@@ -1790,7 +1935,7 @@ export function App() {
                 </div>
 
                 {/* Social Channels & Location */}
-                <div className="pt-2 flex flex-wrap items-center gap-5">
+                <div className="pt-2 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-5">
                   <div className="flex items-center gap-2">
                     {socialLinks.filter((s) => s.isVisible !== false).map((item) => {
                       const IconComp = item.platform.toLowerCase().includes('git')
@@ -1821,20 +1966,20 @@ export function App() {
                   </div>
 
                   <div className={`flex items-center gap-1.5 text-xs ${ui.muted}`}>
-                    <MapPin className="w-3.5 h-3.5 text-[#3B82F6]" />
-                    <span>{profile.availabilityLine}</span>
+                    <MapPin className="w-3.5 h-3.5 text-[#3B82F6] shrink-0" />
+                    <span className="leading-snug">{profile.availabilityLine}</span>
                   </div>
                 </div>
               </div>
 
-              {/* Right Column: Large Studio Portrait with Subtle Architectural Frame */}
-              <div className="lg:col-span-6 relative flex items-end justify-center">
-                <div className="relative w-full max-w-[460px] h-[390px] sm:h-[465px] flex items-end justify-center">
+              {/* Right Column: Studio Portrait with Subtle Architectural Frame */}
+              <div className="lg:col-span-6 relative flex items-end justify-center pt-2 sm:pt-0">
+                <div className="relative w-full max-w-[320px] sm:max-w-[460px] h-[300px] xs:h-[360px] sm:h-[465px] flex items-end justify-center">
                   {isDark ? (
                     <>
                       <div className="absolute inset-x-6 top-6 bottom-0 rounded-[32px] bg-gradient-to-b from-[#131824] to-[#0D1018] border border-[#23293A] transform -rotate-2" />
                       <div
-                        className="pointer-events-none absolute w-[320px] h-[320px] rounded-full blur-[70px] opacity-60"
+                        className="pointer-events-none absolute w-[260px] sm:w-[320px] h-[260px] sm:h-[320px] rounded-full blur-[70px] opacity-60"
                         style={{
                           background:
                             'radial-gradient(circle, rgba(59, 130, 246, 0.45) 0%, rgba(37, 99, 235, 0.12) 60%, transparent 75%)',
@@ -1856,7 +2001,7 @@ export function App() {
                         : '/portrait_light_cutout.png'
                     }
                     alt={profile.name}
-                    className="relative z-10 h-[375px] sm:h-[450px] w-auto object-contain object-bottom select-none"
+                    className="relative z-10 h-[290px] xs:h-[350px] sm:h-[450px] w-auto object-contain object-bottom select-none drop-shadow-xl"
                   />
                 </div>
               </div>
@@ -2077,7 +2222,7 @@ export function App() {
               </div>
 
               {/* Category Filter Pills */}
-              <div className={`flex flex-wrap gap-1.5 p-1 rounded-xl border ${ui.card}`}>
+              <div className={`flex items-center gap-1.5 p-1 rounded-xl border overflow-x-auto no-scrollbar max-w-full ${ui.card}`}>
                 {['All', 'Frontend', 'Backend', 'Database', 'Workflow'].map((cat) => {
                   const active = homeSkillFilter === cat;
                   return (
@@ -2085,9 +2230,9 @@ export function App() {
                       key={cat}
                       type="button"
                       onClick={() => setHomeSkillFilter(cat)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition ${
                         active
-                          ? 'bg-[#2563EB] text-white shadow-sm'
+                          ? 'bg-[#2563EB] text-white shadow-xs'
                           : isDark
                           ? 'text-gray-400 hover:text-white hover:bg-white/5'
                           : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
@@ -2279,15 +2424,15 @@ export function App() {
               </p>
             </div>
 
-            <div className="flex flex-wrap items-center gap-1.5">
+            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar max-w-full pb-1 sm:pb-0">
               {(['All', 'Web', 'AI', 'Dashboard'] as ProjectCategory[]).map((cat) => (
                 <button
                   key={cat}
                   type="button"
                   onClick={() => setProjectFilter(cat)}
-                  className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition ${
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition ${
                     projectFilter === cat
-                      ? 'bg-[#2563EB] text-white'
+                      ? 'bg-[#2563EB] text-white shadow-xs'
                       : isDark
                       ? 'bg-[#141824] text-[#9CA3AF] hover:text-white border border-[#222736]'
                       : 'bg-[#F3F4F6] text-[#4B5563] hover:text-[#111827]'
@@ -2688,19 +2833,52 @@ export function App() {
             {certifications.map((cert) => (
               <div
                 key={cert.id}
-                className={`rounded-2xl border p-6 flex flex-col justify-between transition space-y-4 ${ui.card} ${ui.cardHover}`}
+                className={`rounded-2xl border p-5 sm:p-6 flex flex-col justify-between transition space-y-4 ${ui.card} ${ui.cardHover}`}
               >
                 <div className="space-y-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="w-11 h-11 rounded-xl bg-[#2563EB]/10 text-[#3B82F6] flex items-center justify-center shrink-0">
-                      <Award className="w-5 h-5" />
+                  {/* Photo Preview if Hand Photo / Certificate Image Attached */}
+                  {cert.imageUrl ? (
+                    <div
+                      onClick={() =>
+                        setSelectedCertPreview({
+                          title: cert.title,
+                          issuer: cert.issuer,
+                          imageUrl: cert.imageUrl!,
+                          credentialId: cert.credentialId || undefined,
+                          credentialUrl: cert.credentialUrl || undefined
+                        })
+                      }
+                      className="relative w-full h-44 sm:h-48 rounded-xl overflow-hidden cursor-pointer group bg-black/20 border border-inherit"
+                    >
+                      <img
+                        src={cert.imageUrl}
+                        alt={cert.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent flex items-end justify-between p-3">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-black/70 text-white backdrop-blur-xs">
+                          <Maximize2 className="w-3 h-3" />
+                          <span>View Certificate Photo</span>
+                        </span>
+                        {cert.issueDate && (
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-black/60 text-white">
+                            {cert.issueDate}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    {cert.issueDate && (
-                      <span className={`text-[11px] font-mono font-semibold px-2.5 py-1 rounded-full border ${ui.card}`}>
-                        {cert.issueDate}
-                      </span>
-                    )}
-                  </div>
+                  ) : (
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="w-11 h-11 rounded-xl bg-[#2563EB]/10 text-[#3B82F6] flex items-center justify-center shrink-0">
+                        <Award className="w-5 h-5" />
+                      </div>
+                      {cert.issueDate && (
+                        <span className={`text-[11px] font-mono font-semibold px-2.5 py-1 rounded-full border ${ui.card}`}>
+                          {cert.issueDate}
+                        </span>
+                      )}
+                    </div>
+                  )}
 
                   <div className="space-y-1">
                     <h3 className={`font-bold text-base sm:text-lg leading-snug ${ui.heading}`}>
@@ -2724,19 +2902,37 @@ export function App() {
                   )}
                 </div>
 
-                {cert.credentialUrl && (
-                  <div className="pt-2 border-t border-inherit">
+                <div className="pt-2 border-t border-inherit flex flex-col sm:flex-row gap-2">
+                  {cert.imageUrl && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setSelectedCertPreview({
+                          title: cert.title,
+                          issuer: cert.issuer,
+                          imageUrl: cert.imageUrl!,
+                          credentialId: cert.credentialId || undefined,
+                          credentialUrl: cert.credentialUrl || undefined
+                        })
+                      }
+                      className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl transition flex-1 justify-center border ${ui.secondaryBtn}`}
+                    >
+                      <ImageIcon className="w-3.5 h-3.5 text-[#3B82F6]" />
+                      <span>View Photo</span>
+                    </button>
+                  )}
+                  {cert.credentialUrl && (
                     <a
                       href={cert.credentialUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center gap-1.5 text-xs font-semibold px-3.5 py-2 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white transition w-full justify-center"
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold px-3.5 py-2 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white transition flex-1 justify-center"
                     >
                       <span>Verify Credential</span>
                       <ExternalLink className="w-3.5 h-3.5" />
                     </a>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             ))}
           </div>
@@ -2835,8 +3031,94 @@ export function App() {
       )}
 
       {currentPage === 'admin' && isAdminAuthenticated && (
-        <div className={`min-h-screen flex ${isDark ? 'bg-[#090B10]' : 'bg-[#F3F4F6]/70'}`}>
-          <aside className="w-60 bg-[#0C1017] border-r border-[#1C2230] text-gray-300 flex flex-col justify-between shrink-0">
+        <div className={`min-h-screen flex flex-col lg:flex-row ${isDark ? 'bg-[#090B10]' : 'bg-[#F3F4F6]/70'}`}>
+          {/* Mobile Admin Header (< lg screens) */}
+          <div className="lg:hidden sticky top-0 z-20 border-b bg-[#0C1017] text-white px-4 h-14 flex items-center justify-between">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="font-bold text-xs uppercase tracking-wider text-[#3B82F6]">Admin</span>
+              <span className="text-xs text-gray-400">/</span>
+              <span className="text-xs font-semibold capitalize text-white truncate">{adminSection}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={toggleTheme}
+                className="p-1.5 rounded-lg bg-white/10 text-gray-200"
+                title="Toggle Theme"
+              >
+                {isDark ? <Sun className="w-3.5 h-3.5 text-amber-400" /> : <Moon className="w-3.5 h-3.5" />}
+              </button>
+              <button
+                type="button"
+                onClick={() => setAdminMobileMenuOpen(!adminMobileMenuOpen)}
+                className="p-1.5 rounded-lg bg-white/10 text-gray-200"
+                aria-label="Toggle admin menu"
+              >
+                {adminMobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+
+          {/* Mobile Admin Drawer */}
+          {adminMobileMenuOpen && (
+            <div className="lg:hidden fixed inset-x-0 top-14 z-20 bg-[#0C1017] border-b border-[#1C2230] p-4 space-y-3 max-h-[80vh] overflow-y-auto shadow-2xl">
+              <div className="grid grid-cols-2 gap-1.5">
+                {[
+                  { id: 'dashboard', label: 'Dashboard', icon: Layers },
+                  { id: 'profile', label: 'Profile', icon: User },
+                  { id: 'social', label: 'Social Links', icon: Share2 },
+                  { id: 'certifications', label: 'Certifications', icon: Award },
+                  { id: 'projects', label: 'Projects', icon: FolderKanban },
+                  { id: 'skills', label: 'Skills', icon: Code2 },
+                  { id: 'experience', label: 'Experience', icon: Briefcase },
+                  { id: 'education', label: 'Education', icon: GraduationCap },
+                  { id: 'resume', label: 'Resume', icon: FileText },
+                  { id: 'messages', label: 'Messages', icon: MessageSquare },
+                  { id: 'settings', label: 'Settings & API', icon: Settings }
+                ].map((item) => {
+                  const IconComp = item.icon;
+                  const active = adminSection === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => {
+                        setAdminSection(item.id as AdminSection);
+                        setAdminMobileMenuOpen(false);
+                      }}
+                      className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold transition ${
+                        active
+                          ? 'bg-[#2563EB] text-white'
+                          : 'text-gray-300 hover:bg-white/5'
+                      }`}
+                    >
+                      <IconComp className="w-3.5 h-3.5 shrink-0" />
+                      <span className="truncate">{item.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="pt-2 border-t border-white/10 flex items-center justify-between text-xs">
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage('home')}
+                  className="text-blue-400 hover:underline flex items-center gap-1"
+                >
+                  <Globe className="w-3.5 h-3.5" /> View Public Site
+                </button>
+                <button
+                  type="button"
+                  onClick={handleAdminLogout}
+                  className="text-red-400 hover:underline flex items-center gap-1"
+                >
+                  <LogOut className="w-3.5 h-3.5" /> Logout
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Desktop Admin Sidebar */}
+          <aside className="hidden lg:flex w-60 bg-[#0C1017] border-r border-[#1C2230] text-gray-300 flex-col justify-between shrink-0">
             <div className="p-5 space-y-6">
               <div className="flex items-center justify-between px-2">
                 <span className="text-xs font-mono uppercase tracking-wider text-gray-400">Admin Console</span>
@@ -2906,7 +3188,7 @@ export function App() {
           </aside>
 
           <div className="flex-1 flex flex-col min-w-0">
-            <header className={`h-16 border-b px-6 flex items-center justify-between ${ui.card}`}>
+            <header className={`hidden lg:flex h-16 border-b px-6 items-center justify-between ${ui.card}`}>
               <div className="flex items-center gap-3">
                 <span className={`text-sm font-bold capitalize ${ui.heading}`}>{adminSection}</span>
                 <span className="text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-[#2563EB]/15 text-[#3B82F6] font-medium">
@@ -3478,6 +3760,52 @@ export function App() {
                           className={`w-full rounded-xl border px-3 py-2 text-sm ${ui.input}`}
                         />
                       </div>
+
+                      {/* Photo Upload for Hand Photos / Camera Pictures */}
+                      <div className="col-span-full space-y-2">
+                        <label className={`block text-xs font-semibold ${ui.heading}`}>
+                          Certificate Photo (Camera Picture / Hand Photos Supported)
+                        </label>
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                          <label className={`cursor-pointer inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border text-xs font-semibold transition ${ui.secondaryBtn}`}>
+                            <Camera className="w-4 h-4 text-[#3B82F6]" />
+                            <span>{isCompressingImage ? 'Processing Photo...' : 'Upload / Snap Photo'}</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              capture="environment"
+                              onChange={handleCertImageUpload}
+                              className="hidden"
+                            />
+                          </label>
+                          <span className={`text-xs ${ui.muted}`}>or enter image URL:</span>
+                          <input
+                            type="text"
+                            value={newCertImageUrl}
+                            onChange={(e) => setNewCertImageUrl(e.target.value)}
+                            placeholder="https://... or data:image/..."
+                            className={`flex-1 w-full rounded-xl border px-3 py-2 text-xs ${ui.input}`}
+                          />
+                        </div>
+                        {newCertImageUrl && (
+                          <div className="relative inline-block mt-2 rounded-xl overflow-hidden border border-[#2563EB]/40 bg-black/10">
+                            <img
+                              src={newCertImageUrl}
+                              alt="Certificate preview"
+                              className="h-28 w-auto object-cover rounded-xl"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setNewCertImageUrl('')}
+                              className="absolute top-1 right-1 w-6 h-6 rounded-full bg-red-600 text-white flex items-center justify-center text-xs"
+                              title="Remove photo"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
                       <div className="col-span-full">
                         <label className={`block text-xs font-semibold mb-1 ${ui.heading}`}>
                           Description / Core Skills
@@ -3512,9 +3840,27 @@ export function App() {
                         >
                           <div className="flex items-start justify-between gap-3">
                             <div className="flex items-start gap-3 min-w-0 flex-1">
-                              <div className="w-10 h-10 rounded-xl bg-[#2563EB]/10 text-[#3B82F6] flex items-center justify-center shrink-0 mt-0.5">
-                                <Award className="w-5 h-5" />
-                              </div>
+                              {cert.imageUrl ? (
+                                <img
+                                  src={cert.imageUrl}
+                                  alt={cert.title}
+                                  onClick={() =>
+                                    setSelectedCertPreview({
+                                      title: cert.title,
+                                      issuer: cert.issuer,
+                                      imageUrl: cert.imageUrl!,
+                                      credentialId: cert.credentialId || undefined,
+                                      credentialUrl: cert.credentialUrl || undefined
+                                    })
+                                  }
+                                  className="w-12 h-12 rounded-xl object-cover shrink-0 cursor-pointer border border-[#2563EB]/30 hover:opacity-80 transition"
+                                  title="Click to view full photo"
+                                />
+                              ) : (
+                                <div className="w-10 h-10 rounded-xl bg-[#2563EB]/10 text-[#3B82F6] flex items-center justify-center shrink-0 mt-0.5">
+                                  <Award className="w-5 h-5" />
+                                </div>
+                              )}
                               <div className="min-w-0 flex-1 space-y-1">
                                 {isEditing ? (
                                   <div className="space-y-2">
@@ -3548,6 +3894,26 @@ export function App() {
                                       placeholder="Credential URL"
                                       className={`w-full rounded-lg border px-2.5 py-1.5 text-xs ${ui.input}`}
                                     />
+                                    <div className="flex items-center gap-2">
+                                      <label className={`cursor-pointer inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-medium ${ui.secondaryBtn}`}>
+                                        <Camera className="w-3.5 h-3.5 text-[#3B82F6]" />
+                                        <span>Change Photo</span>
+                                        <input
+                                          type="file"
+                                          accept="image/*"
+                                          capture="environment"
+                                          onChange={handleEditCertImageUpload}
+                                          className="hidden"
+                                        />
+                                      </label>
+                                      <input
+                                        type="text"
+                                        value={editingCertImageUrl}
+                                        onChange={(e) => setEditingCertImageUrl(e.target.value)}
+                                        placeholder="Photo URL..."
+                                        className={`flex-1 rounded-lg border px-2.5 py-1.5 text-xs ${ui.input}`}
+                                      />
+                                    </div>
                                     <textarea
                                       rows={2}
                                       value={editingCertDesc}
@@ -3575,6 +3941,24 @@ export function App() {
                                         <span className={`text-[11px] font-mono ${ui.muted}`}>
                                           ID: <span className="font-semibold">{cert.credentialId}</span>
                                         </span>
+                                      )}
+                                      {cert.imageUrl && (
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            setSelectedCertPreview({
+                                              title: cert.title,
+                                              issuer: cert.issuer,
+                                              imageUrl: cert.imageUrl!,
+                                              credentialId: cert.credentialId || undefined,
+                                              credentialUrl: cert.credentialUrl || undefined
+                                            })
+                                          }
+                                          className={`text-xs hover:underline inline-flex items-center gap-1 ${ui.accentText}`}
+                                        >
+                                          <ImageIcon className="w-3 h-3" />
+                                          <span>View Photo</span>
+                                        </button>
                                       )}
                                       {cert.credentialUrl && (
                                         <a
@@ -4226,6 +4610,85 @@ export function App() {
               >
                 <Download className="w-3.5 h-3.5" /> Download PDF
               </a>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =====================================================================
+          CERTIFICATE PHOTO LIGHTBOX MODAL
+         ===================================================================== */}
+      {selectedCertPreview && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6">
+          <div
+            className={`rounded-2xl max-w-3xl w-full max-h-[92vh] flex flex-col overflow-hidden shadow-2xl border ${ui.card}`}
+          >
+            <div className={`p-4 border-b flex items-center justify-between gap-3 ${ui.divider}`}>
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-8 h-8 rounded-lg bg-[#2563EB]/15 text-[#3B82F6] flex items-center justify-center shrink-0">
+                  <Award className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className={`font-bold text-sm sm:text-base truncate ${ui.heading}`}>
+                    {selectedCertPreview.title}
+                  </h3>
+                  <p className={`text-xs truncate ${ui.muted}`}>
+                    {selectedCertPreview.issuer}
+                    {selectedCertPreview.credentialId ? ` · ID: ${selectedCertPreview.credentialId}` : ''}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedCertPreview(null)}
+                className={`p-1.5 rounded-lg border text-gray-400 hover:text-white transition ${ui.secondaryBtn}`}
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-auto p-3 sm:p-4 bg-black/40 flex items-center justify-center">
+              <img
+                src={selectedCertPreview.imageUrl}
+                alt={selectedCertPreview.title}
+                className="max-h-[70vh] w-auto max-w-full rounded-lg object-contain shadow-lg"
+              />
+            </div>
+
+            <div className={`p-3 border-t flex flex-wrap items-center justify-between gap-3 ${ui.divider}`}>
+              <span className={`text-[11px] ${ui.muted}`}>
+                Verified Photo Document
+              </span>
+              <div className="flex items-center gap-2">
+                <a
+                  href={selectedCertPreview.imageUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  download={`${selectedCertPreview.title}.jpg`}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold inline-flex items-center gap-1.5 transition ${ui.secondaryBtn}`}
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Download Photo</span>
+                </a>
+                {selectedCertPreview.credentialUrl && (
+                  <a
+                    href={selectedCertPreview.credentialUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="px-3.5 py-1.5 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-semibold inline-flex items-center gap-1.5 transition"
+                  >
+                    <span>Verify Online</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setSelectedCertPreview(null)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold ${ui.secondaryBtn}`}
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         </div>
