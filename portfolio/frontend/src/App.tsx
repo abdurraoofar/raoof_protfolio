@@ -3450,16 +3450,19 @@ export function App() {
               >
                 Close
               </button>
-              <button
-                type="button"
+              <a
+                href="/Abdur_Raoof_Resume.pdf"
+                download="Abdur_Raoof_Resume.pdf"
+                target="_blank"
+                rel="noopener noreferrer"
                 onClick={() => {
                   setShowResumeModal(false);
-                  showToast(`Downloaded ${resumeMeta.fileName}`);
+                  showToast(`Downloading ${resumeMeta.fileName}...`);
                 }}
-                className="px-4 py-2 rounded-xl bg-[#2563EB] text-white text-xs font-semibold inline-flex items-center gap-1.5"
+                className="px-4 py-2 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-semibold inline-flex items-center gap-1.5 transition-colors"
               >
                 <Download className="w-3.5 h-3.5" /> Download PDF
-              </button>
+              </a>
             </div>
           </div>
         </div>
