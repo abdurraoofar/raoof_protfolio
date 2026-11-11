@@ -31,7 +31,12 @@ import {
   profileSchema,
   getAdminResumes,
   createAdminResume,
-  activateAdminResume
+  activateAdminResume,
+  getAdminSocialLinks,
+  createAdminSocialLink,
+  updateAdminSocialLink,
+  deleteAdminSocialLink,
+  socialLinkSchema
 } from '../controllers/admin.controller';
 import { validateRequest } from '../middlewares/validate';
 import { authenticateAdmin } from '../middlewares/auth';
@@ -82,5 +87,11 @@ router.put('/profile', validateRequest(profileSchema), updateAdminProfile);
 router.get('/resume', getAdminResumes);
 router.post('/resume', createAdminResume);
 router.patch('/resume/:id/activate', activateAdminResume);
+
+// Social Links
+router.get('/social-links', getAdminSocialLinks);
+router.post('/social-links', validateRequest(socialLinkSchema), createAdminSocialLink);
+router.put('/social-links/:id', validateRequest(socialLinkSchema), updateAdminSocialLink);
+router.delete('/social-links/:id', deleteAdminSocialLink);
 
 export default router;

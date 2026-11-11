@@ -99,6 +99,16 @@ export const profileSchema = z.object({
   })
 });
 
+export const socialLinkSchema = z.object({
+  body: z.object({
+    platform: z.string().min(1, 'Platform is required'),
+    url: z.string().min(1, 'URL is required'),
+    icon: z.string().optional().nullable(),
+    isVisible: z.boolean().default(true),
+    displayOrder: z.number().int().default(0)
+  })
+});
+
 // ---------------------------------------------
 // Authentication Controllers
 // ---------------------------------------------
@@ -391,4 +401,35 @@ export const activateAdminResume = asyncHandler(async (req: Request, res: Respon
     data: { isActive: true }
   });
   res.status(200).json({ success: true, data: resume, message: 'Resume activated' });
+});
+
+export const getAdminSocialLinks = asyncHandler(async (_req: Request, res: Response) => {
+  const links = await prisma.socialLink.findMany({
+    orderBy: { displayOrder: 'asc' }
+  });
+  res.status(200).json({ success: true, data: links });
+});
+
+export const createAdminSocialLink = asyncHandler(async (req: Request, res: Response) => {
+  const link = await prisma.socialLink.create({
+    data: req.body
+  });
+  res.status(201).json({ success: true, data: link, message: 'Social link created' });
+});
+
+export const updateAdminSocialLink = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const link = await prisma.socialLink.update({
+    where: { id },
+    data: req.body
+  });
+  res.status(200).json({ success: true, data: link, message: 'Social link updated' });
+});
+
+export const deleteAdminSocialLink = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  await prisma.socialLink.delete({
+    where: { id }
+  });
+  res.status(200).json({ success: true, message: 'Social link deleted' });
 });

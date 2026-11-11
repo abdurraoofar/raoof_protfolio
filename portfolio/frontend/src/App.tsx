@@ -38,6 +38,7 @@ import {
   Upload,
   CheckCircle,
   Globe,
+  Share2,
   Sun,
   Moon,
   ChevronDown,
@@ -49,6 +50,7 @@ type PageRoute = 'home' | 'projects' | 'about' | 'contact' | 'admin';
 type AdminSection =
   | 'dashboard'
   | 'profile'
+  | 'social'
   | 'projects'
   | 'skills'
   | 'experience'
@@ -57,6 +59,15 @@ type AdminSection =
   | 'messages'
   | 'settings';
 type ProjectCategory = 'All' | 'Web' | 'AI' | 'Dashboard';
+
+export interface SocialLinkItem {
+  id: string;
+  platform: string;
+  url: string;
+  icon?: string | null;
+  isVisible?: boolean;
+  displayOrder?: number;
+}
 
 interface ProjectItem {
   id: string;
@@ -456,10 +467,20 @@ export function App() {
     location: 'Chennai, India',
     locationFull: 'Chennai, Tamil Nadu',
     availabilityLine: 'Chennai, India · Open to full-time roles & IT opportunities',
-    email: 'raoofwebdev@gmail.com',
-    githubUrl: 'https://github.com/raoofwebdev',
-    linkedinUrl: 'https://linkedin.com/in/abdur-raoof'
+    email: 'abdurraoofar@gmail.com',
+    githubUrl: 'https://github.com/abdurraoofar',
+    linkedinUrl: 'https://linkedin.com/in/abdurraoof'
   });
+
+  const [socialLinks, setSocialLinks] = useState<SocialLinkItem[]>([
+    { id: 'soc-1', platform: 'GitHub', url: 'https://github.com/abdurraoofar', icon: 'Github', isVisible: true, displayOrder: 1 },
+    { id: 'soc-2', platform: 'LinkedIn', url: 'https://linkedin.com/in/abdurraoof', icon: 'Linkedin', isVisible: true, displayOrder: 2 },
+    { id: 'soc-3', platform: 'Email', url: 'mailto:abdurraoofar@gmail.com', icon: 'Mail', isVisible: true, displayOrder: 3 }
+  ]);
+  const [newSocialPlatform, setNewSocialPlatform] = useState('');
+  const [newSocialUrl, setNewSocialUrl] = useState('');
+  const [editingSocialId, setEditingSocialId] = useState<string | null>(null);
+  const [editingSocialUrl, setEditingSocialUrl] = useState('');
 
   const [homeSkillFilter, setHomeSkillFilter] = useState<string>('All');
 
@@ -580,6 +601,7 @@ export function App() {
           skills: dbSkills,
           experiences: dbExp,
           educations: dbEdu,
+          socialLinks: dbSocial,
           activeResume
         } = json.data;
 
@@ -655,6 +677,19 @@ export function App() {
               details: ed.details || ''
             }))
           );
+        }
+
+        if (Array.isArray(dbSocial) && dbSocial.length > 0) {
+          setSocialLinks(dbSocial);
+          const gh = dbSocial.find((s: any) => s.platform.toLowerCase().includes('git'));
+          const li = dbSocial.find((s: any) => s.platform.toLowerCase().includes('link'));
+          const em = dbSocial.find((s: any) => s.platform.toLowerCase().includes('mail'));
+          setProfile((prev) => ({
+            ...prev,
+            githubUrl: gh?.url || prev.githubUrl,
+            linkedinUrl: li?.url || prev.linkedinUrl,
+            email: em?.url?.replace(/^mailto:/, '') || prev.email
+          }));
         }
 
         if (activeResume) {
@@ -1200,11 +1235,100 @@ export function App() {
             statusBadge: profile.statusBadge
           })
         });
+
+        // Sync GitHub & LinkedIn social links
+        const gh = socialLinks.find((s) => s.platform.toLowerCase().includes('git'));
+        if (gh && profile.githubUrl) {
+          await fetch(`${API_BASE}/admin/social-links/${gh.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+            body: JSON.stringify({ platform: gh.platform, url: profile.githubUrl })
+          });
+        }
+        const li = socialLinks.find((s) => s.platform.toLowerCase().includes('link'));
+        if (li && profile.linkedinUrl) {
+          await fetch(`${API_BASE}/admin/social-links/${li.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+            body: JSON.stringify({ platform: li.platform, url: profile.linkedinUrl })
+          });
+        }
       }
     } catch (err) {
       console.warn('API error saving profile:', err);
     }
-    showToast('Saved profile changes to PostgreSQL');
+    showToast('Saved profile and links to PostgreSQL');
+  };
+
+  const handleAddSocialLink = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newSocialPlatform.trim() || !newSocialUrl.trim()) return;
+    const payload = {
+      platform: newSocialPlatform.trim(),
+      url: newSocialUrl.trim(),
+      icon: newSocialPlatform.trim(),
+      isVisible: true,
+      displayOrder: socialLinks.length + 1
+    };
+    try {
+      if (adminToken) {
+        const res = await fetch(`${API_BASE}/admin/social-links`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+          body: JSON.stringify(payload)
+        });
+        const json = await res.json();
+        if (json.success && json.data) {
+          setSocialLinks([...socialLinks, json.data]);
+        } else {
+          setSocialLinks([...socialLinks, { ...payload, id: `soc-${Date.now()}` }]);
+        }
+      } else {
+        setSocialLinks([...socialLinks, { ...payload, id: `soc-${Date.now()}` }]);
+      }
+      setNewSocialPlatform('');
+      setNewSocialUrl('');
+      showToast('Added social link');
+    } catch {
+      setSocialLinks([...socialLinks, { ...payload, id: `soc-${Date.now()}` }]);
+      setNewSocialPlatform('');
+      setNewSocialUrl('');
+      showToast('Added social link');
+    }
+  };
+
+  const handleDeleteSocialLink = async (id: string) => {
+    setSocialLinks(socialLinks.filter((s) => s.id !== id));
+    try {
+      if (adminToken) {
+        await fetch(`${API_BASE}/admin/social-links/${id}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${adminToken}` }
+        });
+      }
+    } catch (err) {
+      console.warn('API error deleting social link:', err);
+    }
+    showToast('Deleted social link');
+  };
+
+  const handleUpdateSocialLink = async (id: string, updatedUrl: string) => {
+    const item = socialLinks.find((s) => s.id === id);
+    if (!item) return;
+    setSocialLinks(socialLinks.map((s) => (s.id === id ? { ...s, url: updatedUrl } : s)));
+    setEditingSocialId(null);
+    try {
+      if (adminToken) {
+        await fetch(`${API_BASE}/admin/social-links/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+          body: JSON.stringify({ platform: item.platform, url: updatedUrl })
+        });
+      }
+    } catch (err) {
+      console.warn('API error updating social link:', err);
+    }
+    showToast('Updated social link');
   };
 
   const handleAddExperience = async (e: React.FormEvent) => {
@@ -1507,44 +1631,32 @@ export function App() {
                 {/* Social Channels & Location */}
                 <div className="pt-2 flex flex-wrap items-center gap-5">
                   <div className="flex items-center gap-2">
-                    <a
-                      href={profile.githubUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      aria-label="GitHub"
-                      className={`p-2 rounded-lg border transition ${
-                        isDark
-                          ? 'border-[#222736] text-gray-300 hover:text-white hover:bg-[#151924]'
-                          : 'border-gray-200 text-gray-700 hover:text-[#111827] hover:bg-[#F3F4F6]'
-                      }`}
-                    >
-                      <Github className="w-4 h-4" />
-                    </a>
-                    <a
-                      href={profile.linkedinUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      aria-label="LinkedIn"
-                      className={`p-2 rounded-lg border transition ${
-                        isDark
-                          ? 'border-[#222736] text-gray-300 hover:text-white hover:bg-[#151924]'
-                          : 'border-gray-200 text-gray-700 hover:text-[#2563EB] hover:bg-[#F3F4F6]'
-                      }`}
-                    >
-                      <Linkedin className="w-4 h-4" />
-                    </a>
-                    <button
-                      type="button"
-                      onClick={() => setCurrentPage('contact')}
-                      aria-label="Email"
-                      className={`p-2 rounded-lg border transition ${
-                        isDark
-                          ? 'border-[#222736] text-gray-300 hover:text-white hover:bg-[#151924]'
-                          : 'border-gray-200 text-gray-700 hover:text-[#2563EB] hover:bg-[#F3F4F6]'
-                      }`}
-                    >
-                      <Mail className="w-4 h-4" />
-                    </button>
+                    {socialLinks.filter((s) => s.isVisible !== false).map((item) => {
+                      const IconComp = item.platform.toLowerCase().includes('git')
+                        ? Github
+                        : item.platform.toLowerCase().includes('link')
+                        ? Linkedin
+                        : item.platform.toLowerCase().includes('mail')
+                        ? Mail
+                        : Globe;
+                      return (
+                        <a
+                          key={item.id}
+                          href={item.url}
+                          target={item.url.startsWith('mailto:') ? '_self' : '_blank'}
+                          rel="noreferrer"
+                          aria-label={item.platform}
+                          title={item.platform}
+                          className={`p-2 rounded-lg border transition ${
+                            isDark
+                              ? 'border-[#222736] text-gray-300 hover:text-white hover:bg-[#151924]'
+                              : 'border-gray-200 text-gray-700 hover:text-[#111827] hover:bg-[#F3F4F6]'
+                          }`}
+                        >
+                          <IconComp className="w-4 h-4" />
+                        </a>
+                      );
+                    })}
                   </div>
 
                   <div className={`flex items-center gap-1.5 text-xs ${ui.muted}`}>
@@ -2289,22 +2401,26 @@ export function App() {
               </div>
 
               <div className="flex items-center gap-3 pt-2">
-                <a
-                  href={profile.githubUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className={`w-9 h-9 rounded-xl border flex items-center justify-center transition ${ui.card} ${ui.cardHover}`}
-                >
-                  <Github className="w-4 h-4" />
-                </a>
-                <a
-                  href={profile.linkedinUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className={`w-9 h-9 rounded-xl border flex items-center justify-center transition ${ui.card} ${ui.cardHover}`}
-                >
-                  <Linkedin className="w-4 h-4" />
-                </a>
+                {socialLinks.filter((s) => s.isVisible !== false && !s.platform.toLowerCase().includes('mail')).map((item) => {
+                  const IconComp = item.platform.toLowerCase().includes('git')
+                    ? Github
+                    : item.platform.toLowerCase().includes('link')
+                    ? Linkedin
+                    : Globe;
+                  return (
+                    <a
+                      key={item.id}
+                      href={item.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      aria-label={item.platform}
+                      title={item.platform}
+                      className={`w-9 h-9 rounded-xl border flex items-center justify-center transition ${ui.card} ${ui.cardHover}`}
+                    >
+                      <IconComp className="w-4 h-4" />
+                    </a>
+                  );
+                })}
               </div>
             </div>
 
@@ -2500,6 +2616,7 @@ export function App() {
                 {[
                   { id: 'dashboard', label: 'Dashboard', icon: Layers },
                   { id: 'profile', label: 'Profile', icon: User },
+                  { id: 'social', label: 'Social Links', icon: Share2 },
                   { id: 'projects', label: 'Projects', icon: FolderKanban },
                   { id: 'skills', label: 'Skills', icon: Code2 },
                   { id: 'experience', label: 'Experience', icon: Briefcase },
@@ -2872,6 +2989,41 @@ export function App() {
                       className={`w-full rounded-xl border px-3 py-2 text-sm ${ui.input}`}
                     />
                   </div>
+
+                  {/* Social Profile Links */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-3 border-t border-gray-200 dark:border-gray-800">
+                    <div>
+                      <label className={`block text-xs font-semibold mb-1 ${ui.heading}`}>Contact Email</label>
+                      <input
+                        type="email"
+                        value={profile.email}
+                        onChange={(e) => setProfile({ ...profile, email: e.target.value })}
+                        placeholder="yourname@gmail.com"
+                        className={`w-full rounded-xl border px-3 py-2 text-sm ${ui.input}`}
+                      />
+                    </div>
+                    <div>
+                      <label className={`block text-xs font-semibold mb-1 ${ui.heading}`}>GitHub Profile URL</label>
+                      <input
+                        type="text"
+                        value={profile.githubUrl}
+                        onChange={(e) => setProfile({ ...profile, githubUrl: e.target.value })}
+                        placeholder="https://github.com/username"
+                        className={`w-full rounded-xl border px-3 py-2 text-sm ${ui.input}`}
+                      />
+                    </div>
+                    <div>
+                      <label className={`block text-xs font-semibold mb-1 ${ui.heading}`}>LinkedIn Profile URL</label>
+                      <input
+                        type="text"
+                        value={profile.linkedinUrl}
+                        onChange={(e) => setProfile({ ...profile, linkedinUrl: e.target.value })}
+                        placeholder="https://linkedin.com/in/username"
+                        className={`w-full rounded-xl border px-3 py-2 text-sm ${ui.input}`}
+                      />
+                    </div>
+                  </div>
+
                   <button
                     type="button"
                     onClick={handleSaveProfile}
@@ -2879,6 +3031,124 @@ export function App() {
                   >
                     Save Profile Changes
                   </button>
+                </div>
+              )}
+
+              {adminSection === 'social' && (
+                <div className={`rounded-2xl border p-6 space-y-6 ${ui.card}`}>
+                  <div>
+                    <h2 className={`text-xl font-bold ${ui.heading}`}>Social Links &amp; Profiles</h2>
+                    <p className={`text-xs mt-0.5 ${ui.muted}`}>
+                      Add, update, or remove the social links (GitHub, LinkedIn, Email, etc.) displayed across your website.
+                    </p>
+                  </div>
+
+                  {/* Add New Link Form */}
+                  <form onSubmit={handleAddSocialLink} className={`p-4 rounded-xl border flex flex-wrap items-end gap-3 ${ui.subtleSurface}`}>
+                    <div className="flex-1 min-w-[150px]">
+                      <label className={`block text-xs font-semibold mb-1 ${ui.heading}`}>Platform</label>
+                      <input
+                        type="text"
+                        value={newSocialPlatform}
+                        onChange={(e) => setNewSocialPlatform(e.target.value)}
+                        placeholder="GitHub, LinkedIn, Twitter..."
+                        className={`w-full rounded-xl border px-3 py-2 text-sm ${ui.input}`}
+                      />
+                    </div>
+                    <div className="flex-[2] min-w-[240px]">
+                      <label className={`block text-xs font-semibold mb-1 ${ui.heading}`}>URL / Link</label>
+                      <input
+                        type="text"
+                        value={newSocialUrl}
+                        onChange={(e) => setNewSocialUrl(e.target.value)}
+                        placeholder="https://... or mailto:..."
+                        className={`w-full rounded-xl border px-3 py-2 text-sm ${ui.input}`}
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      className="px-4 py-2 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-semibold transition"
+                    >
+                      + Add Link
+                    </button>
+                  </form>
+
+                  {/* Existing Links List */}
+                  <div className="space-y-3">
+                    {socialLinks.map((link) => {
+                      const IconComp = link.platform.toLowerCase().includes('git')
+                        ? Github
+                        : link.platform.toLowerCase().includes('link')
+                        ? Linkedin
+                        : link.platform.toLowerCase().includes('mail')
+                        ? Mail
+                        : Globe;
+                      const isEditing = editingSocialId === link.id;
+                      return (
+                        <div
+                          key={link.id}
+                          className={`p-4 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${ui.card}`}
+                        >
+                          <div className="flex items-center gap-3 min-w-0 flex-1">
+                            <div className="w-9 h-9 rounded-xl bg-[#2563EB]/10 text-[#3B82F6] flex items-center justify-center shrink-0">
+                              <IconComp className="w-4 h-4" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className={`font-semibold text-sm ${ui.heading}`}>{link.platform}</div>
+                              {isEditing ? (
+                                <input
+                                  type="text"
+                                  value={editingSocialUrl}
+                                  onChange={(e) => setEditingSocialUrl(e.target.value)}
+                                  className={`w-full mt-1 rounded-lg border px-2.5 py-1 text-xs ${ui.input}`}
+                                />
+                              ) : (
+                                <a
+                                  href={link.url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className={`text-xs truncate block hover:underline text-[#3B82F6]`}
+                                >
+                                  {link.url}
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            {isEditing ? (
+                              <button
+                                type="button"
+                                onClick={() => handleUpdateSocialLink(link.id, editingSocialUrl)}
+                                className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold"
+                              >
+                                Save
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingSocialId(link.id);
+                                  setEditingSocialUrl(link.url);
+                                }}
+                                className={`p-1.5 rounded-lg border text-xs ${ui.secondaryBtn}`}
+                                title="Edit URL"
+                              >
+                                <Edit3 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteSocialLink(link.id)}
+                              className="p-1.5 rounded-lg border border-red-200 dark:border-red-900/40 text-red-500 hover:bg-red-500/10 text-xs"
+                              title="Delete Link"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
 
