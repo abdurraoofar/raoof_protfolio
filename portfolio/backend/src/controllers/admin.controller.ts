@@ -368,7 +368,7 @@ export const updateAdminProfile = asyncHandler(async (req: Request, res: Respons
         headline: 'IT Graduate',
         bio: 'Bio',
         location: 'Chennai',
-        email: 'abdurraoof.dev@gmail.com',
+        email: 'raoofwebdev@gmail.com',
         statusBadge: 'Active',
         heroHeading: 'Software Engineer',
         heroSubheading: 'Full-Stack Developer',

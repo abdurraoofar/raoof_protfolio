@@ -467,7 +467,7 @@ export function App() {
     location: 'Chennai, India',
     locationFull: 'Chennai, Tamil Nadu',
     availabilityLine: 'Chennai, India · Open to full-time roles & IT opportunities',
-    email: 'abdurraoofar@gmail.com',
+    email: 'raoofwebdev@gmail.com',
     githubUrl: 'https://github.com/abdurraoofar',
     linkedinUrl: 'https://linkedin.com/in/abdurraoof'
   });
@@ -475,7 +475,7 @@ export function App() {
   const [socialLinks, setSocialLinks] = useState<SocialLinkItem[]>([
     { id: 'soc-1', platform: 'GitHub', url: 'https://github.com/abdurraoofar', icon: 'Github', isVisible: true, displayOrder: 1 },
     { id: 'soc-2', platform: 'LinkedIn', url: 'https://linkedin.com/in/abdurraoof', icon: 'Linkedin', isVisible: true, displayOrder: 2 },
-    { id: 'soc-3', platform: 'Email', url: 'mailto:abdurraoofar@gmail.com', icon: 'Mail', isVisible: true, displayOrder: 3 }
+    { id: 'soc-3', platform: 'Email', url: 'mailto:raoofwebdev@gmail.com', icon: 'Mail', isVisible: true, displayOrder: 3 }
   ]);
   const [newSocialPlatform, setNewSocialPlatform] = useState('');
   const [newSocialUrl, setNewSocialUrl] = useState('');

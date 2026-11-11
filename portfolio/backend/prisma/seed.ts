@@ -54,7 +54,7 @@ async function main() {
         'I love building full-stack web applications that look clean, feel responsive, and work reliably. On the frontend, I build with React.js, TypeScript, and Tailwind CSS. On the backend, I create modular REST APIs with Node.js and Express.js, and manage data with PostgreSQL, MongoDB, MySQL, and Prisma ORM.',
       location: 'Chennai, India',
       locationFull: 'Chennai, Tamil Nadu, India',
-      email: 'abdurraoof.dev@gmail.com',
+      email: 'raoofwebdev@gmail.com',
       phone: '+91 98765 43210',
       statusBadge: 'Available for Software Engineer Roles',
       heroHeading: 'Full-Stack Software Engineer',
@@ -306,7 +306,7 @@ async function main() {
     },
     {
       platform: 'Email',
-      url: 'mailto:abdurraoof.dev@gmail.com',
+      url: 'mailto:raoofwebdev@gmail.com',
       icon: 'Mail',
       displayOrder: 3
     }
