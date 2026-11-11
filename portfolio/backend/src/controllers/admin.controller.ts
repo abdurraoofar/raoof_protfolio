@@ -109,6 +109,20 @@ export const socialLinkSchema = z.object({
   })
 });
 
+export const certificationSchema = z.object({
+  body: z.object({
+    title: z.string().min(2, 'Title is required'),
+    issuer: z.string().min(2, 'Issuer is required'),
+    issueDate: z.string().optional().nullable(),
+    expiryDate: z.string().optional().nullable(),
+    credentialId: z.string().optional().nullable(),
+    credentialUrl: z.string().optional().nullable(),
+    imageUrl: z.string().optional().nullable(),
+    description: z.string().optional().nullable(),
+    displayOrder: z.number().int().default(0)
+  })
+});
+
 // ---------------------------------------------
 // Authentication Controllers
 // ---------------------------------------------
@@ -432,4 +446,35 @@ export const deleteAdminSocialLink = asyncHandler(async (req: Request, res: Resp
     where: { id }
   });
   res.status(200).json({ success: true, message: 'Social link deleted' });
+});
+
+export const getAdminCertifications = asyncHandler(async (_req: Request, res: Response) => {
+  const certifications = await prisma.certification.findMany({
+    orderBy: { displayOrder: 'asc' }
+  });
+  res.status(200).json({ success: true, data: certifications });
+});
+
+export const createAdminCertification = asyncHandler(async (req: Request, res: Response) => {
+  const certification = await prisma.certification.create({
+    data: req.body
+  });
+  res.status(201).json({ success: true, data: certification, message: 'Certification created' });
+});
+
+export const updateAdminCertification = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const certification = await prisma.certification.update({
+    where: { id },
+    data: req.body
+  });
+  res.status(200).json({ success: true, data: certification, message: 'Certification updated' });
+});
+
+export const deleteAdminCertification = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  await prisma.certification.delete({
+    where: { id }
+  });
+  res.status(200).json({ success: true, message: 'Certification deleted' });
 });

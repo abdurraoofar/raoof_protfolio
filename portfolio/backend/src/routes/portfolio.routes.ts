@@ -2,6 +2,7 @@ import { Router } from 'express';
 import {
   getPortfolio,
   getProjects,
+  getCertifications,
   getActiveResume,
   postContact,
   contactSchema
@@ -12,6 +13,7 @@ const router = Router();
 
 router.get('/portfolio', getPortfolio);
 router.get('/projects', getProjects);
+router.get('/certifications', getCertifications);
 router.get('/resume/active', getActiveResume);
 router.post('/contact', validateRequest(contactSchema), postContact);
 

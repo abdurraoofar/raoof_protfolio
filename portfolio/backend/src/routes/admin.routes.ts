@@ -36,7 +36,12 @@ import {
   createAdminSocialLink,
   updateAdminSocialLink,
   deleteAdminSocialLink,
-  socialLinkSchema
+  socialLinkSchema,
+  getAdminCertifications,
+  createAdminCertification,
+  updateAdminCertification,
+  deleteAdminCertification,
+  certificationSchema
 } from '../controllers/admin.controller';
 import { validateRequest } from '../middlewares/validate';
 import { authenticateAdmin } from '../middlewares/auth';
@@ -93,5 +98,11 @@ router.get('/social-links', getAdminSocialLinks);
 router.post('/social-links', validateRequest(socialLinkSchema), createAdminSocialLink);
 router.put('/social-links/:id', validateRequest(socialLinkSchema), updateAdminSocialLink);
 router.delete('/social-links/:id', deleteAdminSocialLink);
+
+// Certifications
+router.get('/certifications', getAdminCertifications);
+router.post('/certifications', validateRequest(certificationSchema), createAdminCertification);
+router.put('/certifications/:id', validateRequest(certificationSchema), updateAdminCertification);
+router.delete('/certifications/:id', deleteAdminCertification);
 
 export default router;

@@ -14,7 +14,7 @@ export const contactSchema = z.object({
 });
 
 export const getPortfolio = asyncHandler(async (_req: Request, res: Response) => {
-  const [profile, projects, skills, experiences, educations, socialLinks, activeResume] =
+  const [profile, projects, skills, experiences, educations, socialLinks, activeResume, certifications] =
     await Promise.all([
       prisma.profile.findFirst(),
       prisma.project.findMany({
@@ -38,6 +38,9 @@ export const getPortfolio = asyncHandler(async (_req: Request, res: Response) =>
       prisma.resume.findFirst({
         where: { isActive: true },
         orderBy: { updatedAt: 'desc' }
+      }),
+      prisma.certification.findMany({
+        orderBy: { displayOrder: 'asc' }
       })
     ]);
 
@@ -50,9 +53,22 @@ export const getPortfolio = asyncHandler(async (_req: Request, res: Response) =>
       experiences,
       educations,
       socialLinks,
-      activeResume
+      activeResume,
+      certifications
     },
     message: 'Portfolio data retrieved from PostgreSQL'
+  });
+});
+
+export const getCertifications = asyncHandler(async (_req: Request, res: Response) => {
+  const certifications = await prisma.certification.findMany({
+    orderBy: { displayOrder: 'asc' }
+  });
+
+  res.status(200).json({
+    success: true,
+    data: certifications,
+    message: 'Certifications retrieved from PostgreSQL'
   });
 });
 

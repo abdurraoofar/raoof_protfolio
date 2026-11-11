@@ -42,15 +42,17 @@ import {
   Sun,
   Moon,
   ChevronDown,
-  Menu
+  Menu,
+  Award
 } from 'lucide-react';
 
 type EnvMode = 'development' | 'production';
-type PageRoute = 'home' | 'projects' | 'about' | 'contact' | 'admin';
+type PageRoute = 'home' | 'projects' | 'about' | 'certifications' | 'contact' | 'admin';
 type AdminSection =
   | 'dashboard'
   | 'profile'
   | 'social'
+  | 'certifications'
   | 'projects'
   | 'skills'
   | 'experience'
@@ -66,6 +68,19 @@ export interface SocialLinkItem {
   url: string;
   icon?: string | null;
   isVisible?: boolean;
+  displayOrder?: number;
+}
+
+export interface CertificationItem {
+  id: string;
+  title: string;
+  issuer: string;
+  issueDate?: string | null;
+  expiryDate?: string | null;
+  credentialId?: string | null;
+  credentialUrl?: string | null;
+  imageUrl?: string | null;
+  description?: string | null;
   displayOrder?: number;
 }
 
@@ -348,6 +363,39 @@ const INITIAL_EDUCATION: EducationItem[] = [
   }
 ];
 
+const INITIAL_CERTIFICATIONS: CertificationItem[] = [
+  {
+    id: 'cert-1',
+    title: 'Meta Frontend Developer Specialization',
+    issuer: 'Meta (Coursera)',
+    issueDate: '2024',
+    credentialId: 'META-FD-2024-001',
+    credentialUrl: 'https://coursera.org/verify/professional-cert/meta-frontend-developer',
+    description: 'Comprehensive program covering React, JavaScript, Responsive Web Design, Version Control, and UX/UI principles.',
+    displayOrder: 1
+  },
+  {
+    id: 'cert-2',
+    title: 'PostgreSQL Database Administration & Mastery',
+    issuer: 'Neon / Udemy',
+    issueDate: '2024',
+    credentialId: 'PG-DB-2024-789',
+    credentialUrl: 'https://udemy.com/certificate/postgresql-mastery',
+    description: 'Relational database schema modeling, connection pooling, indexing strategies, and transactional queries.',
+    displayOrder: 2
+  },
+  {
+    id: 'cert-3',
+    title: 'Full-Stack JavaScript & Express RESTful APIs',
+    issuer: 'FreeCodeCamp',
+    issueDate: '2023',
+    credentialId: 'FCC-FS-2023-456',
+    credentialUrl: 'https://freecodecamp.org/certification/abdurraoof/back-end-development',
+    description: 'Production backend development with Node.js, Express, middleware architecture, JWT authentication, and security.',
+    displayOrder: 3
+  }
+];
+
 const getRouteFromUrl = (): PageRoute => {
   if (typeof window === 'undefined') return 'home';
   const path = window.location.pathname.toLowerCase().replace(/\/+$/, '') || '/';
@@ -357,6 +405,7 @@ const getRouteFromUrl = (): PageRoute => {
   }
   if (path === '/about' || hash === '#about' || hash === '#/about') return 'about';
   if (path === '/projects' || hash === '#projects' || hash === '#/projects') return 'projects';
+  if (path === '/certifications' || hash === '#certifications' || hash === '#/certifications') return 'certifications';
   if (path === '/contact' || hash === '#contact' || hash === '#/contact') return 'contact';
   return 'home';
 };
@@ -491,7 +540,21 @@ export function App() {
   const [skills, setSkills] = useState<SkillItem[]>(INITIAL_SKILLS);
   const [experiences, setExperiences] = useState<ExperienceItem[]>(INITIAL_EXPERIENCE);
   const [educations, setEducations] = useState<EducationItem[]>(INITIAL_EDUCATION);
+  const [certifications, setCertifications] = useState<CertificationItem[]>(INITIAL_CERTIFICATIONS);
   const [enquiries, setEnquiries] = useState<EnquiryItem[]>(INITIAL_ENQUIRIES);
+
+  const [newCertTitle, setNewCertTitle] = useState('');
+  const [newCertIssuer, setNewCertIssuer] = useState('');
+  const [newCertDate, setNewCertDate] = useState('');
+  const [newCertId, setNewCertId] = useState('');
+  const [newCertUrl, setNewCertUrl] = useState('');
+  const [newCertDesc, setNewCertDesc] = useState('');
+  const [editingCertId, setEditingCertId] = useState<string | null>(null);
+  const [editingCertTitle, setEditingCertTitle] = useState('');
+  const [editingCertIssuer, setEditingCertIssuer] = useState('');
+  const [editingCertDate, setEditingCertDate] = useState('');
+  const [editingCertUrl, setEditingCertUrl] = useState('');
+  const [editingCertDesc, setEditingCertDesc] = useState('');
 
   const API_BASE = (import.meta.env?.VITE_API_BASE_URL as string) || 'http://localhost:5000/api/v1';
   const [adminToken, setAdminToken] = useState<string>(() => {
@@ -602,6 +665,7 @@ export function App() {
           experiences: dbExp,
           educations: dbEdu,
           socialLinks: dbSocial,
+          certifications: dbCerts,
           activeResume
         } = json.data;
 
@@ -675,6 +739,23 @@ export function App() {
               period: ed.period || `${ed.startYear || 2021} — ${ed.endYear || 2025}`,
               location: ed.location || 'Chennai, India',
               details: ed.details || ''
+            }))
+          );
+        }
+
+        if (Array.isArray(dbCerts) && dbCerts.length > 0) {
+          setCertifications(
+            dbCerts.map((c: any) => ({
+              id: c.id,
+              title: c.title,
+              issuer: c.issuer,
+              issueDate: c.issueDate || null,
+              expiryDate: c.expiryDate || null,
+              credentialId: c.credentialId || null,
+              credentialUrl: c.credentialUrl || null,
+              imageUrl: c.imageUrl || null,
+              description: c.description || null,
+              displayOrder: c.displayOrder || 0
             }))
           );
         }
@@ -1423,6 +1504,85 @@ export function App() {
     showToast('Removed education from PostgreSQL');
   };
 
+  const handleAddCertification = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCertTitle.trim() || !newCertIssuer.trim()) return;
+    let certId = `cert-${Date.now()}`;
+    const payload = {
+      title: newCertTitle.trim(),
+      issuer: newCertIssuer.trim(),
+      issueDate: newCertDate.trim() || undefined,
+      credentialId: newCertId.trim() || undefined,
+      credentialUrl: newCertUrl.trim() || undefined,
+      description: newCertDesc.trim() || undefined,
+      displayOrder: certifications.length + 1
+    };
+    try {
+      if (adminToken) {
+        const res = await fetch(`${API_BASE}/admin/certifications`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+          body: JSON.stringify(payload)
+        });
+        const json = await res.json();
+        if (json.success && json.data?.id) certId = json.data.id;
+      }
+    } catch (err) {
+      console.warn('API error adding certification:', err);
+    }
+    setCertifications((prev) => [...prev, { id: certId, ...payload }]);
+    setNewCertTitle('');
+    setNewCertIssuer('');
+    setNewCertDate('');
+    setNewCertId('');
+    setNewCertUrl('');
+    setNewCertDesc('');
+    showToast(`Added certification "${payload.title}" to PostgreSQL`);
+  };
+
+  const handleDeleteCertification = async (id: string) => {
+    try {
+      if (adminToken) {
+        await fetch(`${API_BASE}/admin/certifications/${id}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${adminToken}` }
+        });
+      }
+    } catch (err) {
+      console.warn('API error deleting certification:', err);
+    }
+    setCertifications((prev) => prev.filter((item) => item.id !== id));
+    showToast('Removed certification from PostgreSQL');
+  };
+
+  const handleUpdateCertification = async (id: string) => {
+    const cert = certifications.find((c) => c.id === id);
+    if (!cert) return;
+    const payload = {
+      title: editingCertTitle.trim() || cert.title,
+      issuer: editingCertIssuer.trim() || cert.issuer,
+      issueDate: editingCertDate.trim() || cert.issueDate,
+      credentialUrl: editingCertUrl.trim() || cert.credentialUrl,
+      description: editingCertDesc.trim() || cert.description
+    };
+    try {
+      if (adminToken) {
+        await fetch(`${API_BASE}/admin/certifications/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+          body: JSON.stringify(payload)
+        });
+      }
+    } catch (err) {
+      console.warn('API error updating certification:', err);
+    }
+    setCertifications((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, ...payload } : c))
+    );
+    setEditingCertId(null);
+    showToast('Updated certification in PostgreSQL');
+  };
+
   return (
     <div
       className={`min-h-screen font-sans antialiased transition-colors duration-200 selection:bg-[#2563EB]/20 selection:text-[#2563EB] ${ui.pageBg}`}
@@ -1453,6 +1613,7 @@ export function App() {
                 { id: 'home', label: 'Home' },
                 { id: 'about', label: 'About' },
                 { id: 'projects', label: 'Projects' },
+                { id: 'certifications', label: 'Certifications' },
                 { id: 'contact', label: 'Contact' }
               ].map((item) => {
                 const isActive = currentPage === item.id;
@@ -1547,7 +1708,7 @@ export function App() {
                 isDark ? 'bg-[#090B10] border-[#1C202B]' : 'bg-white border-gray-100'
               }`}
             >
-              {(['home', 'about', 'projects', 'contact'] as PageRoute[]).map((route) => (
+              {(['home', 'about', 'projects', 'certifications', 'contact'] as PageRoute[]).map((route) => (
                 <button
                   key={route}
                   type="button"
@@ -2506,6 +2667,83 @@ export function App() {
       )}
 
       {/* =====================================================================
+          CERTIFICATIONS PUBLIC VIEW (/certifications)
+         ===================================================================== */}
+      {currentPage === 'certifications' && (
+        <main className="max-w-6xl mx-auto px-4 sm:px-6 py-12 space-y-8">
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-[#2563EB]/10 text-[#3B82F6]">
+              <Award className="w-3.5 h-3.5" />
+              <span>Verified Qualifications &amp; Specializations</span>
+            </div>
+            <h1 className={`text-3xl sm:text-4xl font-bold tracking-tight ${ui.heading}`}>
+              Certifications
+            </h1>
+            <p className={`text-sm sm:text-base max-w-2xl ${ui.body}`}>
+              Accredited certifications and industry credentials across full-stack web engineering, database architecture, and cloud workflows.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {certifications.map((cert) => (
+              <div
+                key={cert.id}
+                className={`rounded-2xl border p-6 flex flex-col justify-between transition space-y-4 ${ui.card} ${ui.cardHover}`}
+              >
+                <div className="space-y-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="w-11 h-11 rounded-xl bg-[#2563EB]/10 text-[#3B82F6] flex items-center justify-center shrink-0">
+                      <Award className="w-5 h-5" />
+                    </div>
+                    {cert.issueDate && (
+                      <span className={`text-[11px] font-mono font-semibold px-2.5 py-1 rounded-full border ${ui.card}`}>
+                        {cert.issueDate}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="space-y-1">
+                    <h3 className={`font-bold text-base sm:text-lg leading-snug ${ui.heading}`}>
+                      {cert.title}
+                    </h3>
+                    <p className="text-xs font-semibold text-[#2563EB]">{cert.issuer}</p>
+                  </div>
+
+                  {cert.description && (
+                    <p className={`text-xs sm:text-sm leading-relaxed ${ui.body}`}>
+                      {cert.description}
+                    </p>
+                  )}
+
+                  {cert.credentialId && (
+                    <div className="pt-1">
+                      <span className={`text-[11px] font-mono ${ui.muted}`}>
+                        ID: <span className="font-semibold">{cert.credentialId}</span>
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {cert.credentialUrl && (
+                  <div className="pt-2 border-t border-inherit">
+                    <a
+                      href={cert.credentialUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold px-3.5 py-2 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white transition w-full justify-center"
+                    >
+                      <span>Verify Credential</span>
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </main>
+      )}
+
+      {/* =====================================================================
           5. ADMIN ACCESS (LOGIN OR DASHBOARD) (/admin)
          ===================================================================== */}
       {currentPage === 'admin' && !isAdminAuthenticated && (
@@ -2617,6 +2855,7 @@ export function App() {
                   { id: 'dashboard', label: 'Dashboard', icon: Layers },
                   { id: 'profile', label: 'Profile', icon: User },
                   { id: 'social', label: 'Social Links', icon: Share2 },
+                  { id: 'certifications', label: 'Certifications', icon: Award },
                   { id: 'projects', label: 'Projects', icon: FolderKanban },
                   { id: 'skills', label: 'Skills', icon: Code2 },
                   { id: 'experience', label: 'Experience', icon: Briefcase },
@@ -2703,13 +2942,21 @@ export function App() {
                     <p className={`text-xs ${ui.muted}`}>Manage your portfolio content</p>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
                     <div className={`rounded-2xl border p-5 space-y-2 ${ui.card}`}>
                       <div className="w-9 h-9 rounded-xl bg-[#2563EB]/10 text-[#3B82F6] flex items-center justify-center">
                         <FolderKanban className="w-4 h-4" />
                       </div>
                       <div className={`text-2xl font-bold tabular-nums ${ui.heading}`}>{projects.length}</div>
                       <div className={`text-xs ${ui.muted}`}>Total Projects</div>
+                    </div>
+
+                    <div className={`rounded-2xl border p-5 space-y-2 ${ui.card}`}>
+                      <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
+                        <Award className="w-4 h-4" />
+                      </div>
+                      <div className={`text-2xl font-bold tabular-nums ${ui.heading}`}>{certifications.length}</div>
+                      <div className={`text-xs ${ui.muted}`}>Certifications</div>
                     </div>
 
                     <div className={`rounded-2xl border p-5 space-y-2 ${ui.card}`}>
@@ -2728,7 +2975,7 @@ export function App() {
                       <div className={`text-xs ${ui.muted}`}>Messages</div>
                     </div>
 
-                    <div className={`rounded-2xl border p-5 space-y-2 ${ui.card}`}>
+                    <div className={`rounded-2xl border p-5 space-y-2 col-span-2 sm:col-span-1 ${ui.card}`}>
                       <div className="w-9 h-9 rounded-xl bg-[#2563EB]/10 text-[#3B82F6] flex items-center justify-center">
                         <Eye className="w-4 h-4" />
                       </div>
@@ -3144,6 +3391,252 @@ export function App() {
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {adminSection === 'certifications' && (
+                <div className={`rounded-2xl border p-6 space-y-6 ${ui.card}`}>
+                  <div className="flex flex-wrap items-center justify-between gap-4">
+                    <div>
+                      <h2 className={`text-xl font-bold ${ui.heading}`}>Certifications Management</h2>
+                      <p className={`text-xs mt-0.5 ${ui.muted}`}>
+                        Add, update, or remove technical certifications and verification links synced to PostgreSQL.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Add New Certification Form */}
+                  <form onSubmit={handleAddCertification} className={`p-4 rounded-xl border space-y-4 ${ui.subtleSurface}`}>
+                    <div className="font-semibold text-xs tracking-wider uppercase text-[#2563EB]">
+                      Add New Certification
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                      <div>
+                        <label className={`block text-xs font-semibold mb-1 ${ui.heading}`}>
+                          Certificate Title <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={newCertTitle}
+                          onChange={(e) => setNewCertTitle(e.target.value)}
+                          placeholder="Meta Frontend Developer Specialization"
+                          className={`w-full rounded-xl border px-3 py-2 text-sm ${ui.input}`}
+                        />
+                      </div>
+                      <div>
+                        <label className={`block text-xs font-semibold mb-1 ${ui.heading}`}>
+                          Issuing Organization <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={newCertIssuer}
+                          onChange={(e) => setNewCertIssuer(e.target.value)}
+                          placeholder="Meta / Coursera"
+                          className={`w-full rounded-xl border px-3 py-2 text-sm ${ui.input}`}
+                        />
+                      </div>
+                      <div>
+                        <label className={`block text-xs font-semibold mb-1 ${ui.heading}`}>
+                          Issue Date / Year
+                        </label>
+                        <input
+                          type="text"
+                          value={newCertDate}
+                          onChange={(e) => setNewCertDate(e.target.value)}
+                          placeholder="2024"
+                          className={`w-full rounded-xl border px-3 py-2 text-sm ${ui.input}`}
+                        />
+                      </div>
+                      <div>
+                        <label className={`block text-xs font-semibold mb-1 ${ui.heading}`}>
+                          Credential ID
+                        </label>
+                        <input
+                          type="text"
+                          value={newCertId}
+                          onChange={(e) => setNewCertId(e.target.value)}
+                          placeholder="META-FD-2024-001"
+                          className={`w-full rounded-xl border px-3 py-2 text-sm ${ui.input}`}
+                        />
+                      </div>
+                      <div className="sm:col-span-2">
+                        <label className={`block text-xs font-semibold mb-1 ${ui.heading}`}>
+                          Credential URL (Verification Link)
+                        </label>
+                        <input
+                          type="url"
+                          value={newCertUrl}
+                          onChange={(e) => setNewCertUrl(e.target.value)}
+                          placeholder="https://coursera.org/verify/..."
+                          className={`w-full rounded-xl border px-3 py-2 text-sm ${ui.input}`}
+                        />
+                      </div>
+                      <div className="col-span-full">
+                        <label className={`block text-xs font-semibold mb-1 ${ui.heading}`}>
+                          Description / Core Skills
+                        </label>
+                        <textarea
+                          rows={2}
+                          value={newCertDesc}
+                          onChange={(e) => setNewCertDesc(e.target.value)}
+                          placeholder="Brief description of skills, topics, and technologies covered..."
+                          className={`w-full rounded-xl border px-3 py-2 text-sm ${ui.input}`}
+                        />
+                      </div>
+                    </div>
+                    <div className="flex justify-end pt-1">
+                      <button
+                        type="submit"
+                        className="px-4 py-2 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-semibold transition"
+                      >
+                        + Add Certification
+                      </button>
+                    </div>
+                  </form>
+
+                  {/* Existing Certifications List */}
+                  <div className="space-y-3">
+                    {certifications.map((cert) => {
+                      const isEditing = editingCertId === cert.id;
+                      return (
+                        <div
+                          key={cert.id}
+                          className={`p-4 rounded-xl border flex flex-col gap-3 ${ui.card}`}
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex items-start gap-3 min-w-0 flex-1">
+                              <div className="w-10 h-10 rounded-xl bg-[#2563EB]/10 text-[#3B82F6] flex items-center justify-center shrink-0 mt-0.5">
+                                <Award className="w-5 h-5" />
+                              </div>
+                              <div className="min-w-0 flex-1 space-y-1">
+                                {isEditing ? (
+                                  <div className="space-y-2">
+                                    <input
+                                      type="text"
+                                      value={editingCertTitle}
+                                      onChange={(e) => setEditingCertTitle(e.target.value)}
+                                      placeholder="Title"
+                                      className={`w-full rounded-lg border px-2.5 py-1.5 text-xs ${ui.input}`}
+                                    />
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                      <input
+                                        type="text"
+                                        value={editingCertIssuer}
+                                        onChange={(e) => setEditingCertIssuer(e.target.value)}
+                                        placeholder="Issuer"
+                                        className={`w-full rounded-lg border px-2.5 py-1.5 text-xs ${ui.input}`}
+                                      />
+                                      <input
+                                        type="text"
+                                        value={editingCertDate}
+                                        onChange={(e) => setEditingCertDate(e.target.value)}
+                                        placeholder="Issue Date"
+                                        className={`w-full rounded-lg border px-2.5 py-1.5 text-xs ${ui.input}`}
+                                      />
+                                    </div>
+                                    <input
+                                      type="text"
+                                      value={editingCertUrl}
+                                      onChange={(e) => setEditingCertUrl(e.target.value)}
+                                      placeholder="Credential URL"
+                                      className={`w-full rounded-lg border px-2.5 py-1.5 text-xs ${ui.input}`}
+                                    />
+                                    <textarea
+                                      rows={2}
+                                      value={editingCertDesc}
+                                      onChange={(e) => setEditingCertDesc(e.target.value)}
+                                      placeholder="Description"
+                                      className={`w-full rounded-lg border px-2.5 py-1.5 text-xs ${ui.input}`}
+                                    />
+                                  </div>
+                                ) : (
+                                  <>
+                                    <div className="flex flex-wrap items-center gap-2">
+                                      <span className={`font-semibold text-sm ${ui.heading}`}>{cert.title}</span>
+                                      <span className="text-xs font-medium text-[#2563EB]">· {cert.issuer}</span>
+                                      {cert.issueDate && (
+                                        <span className={`text-[10px] font-mono px-2 py-0.5 rounded border ${ui.muted}`}>
+                                          {cert.issueDate}
+                                        </span>
+                                      )}
+                                    </div>
+                                    {cert.description && (
+                                      <p className={`text-xs ${ui.body}`}>{cert.description}</p>
+                                    )}
+                                    <div className="flex flex-wrap items-center gap-3 pt-1">
+                                      {cert.credentialId && (
+                                        <span className={`text-[11px] font-mono ${ui.muted}`}>
+                                          ID: <span className="font-semibold">{cert.credentialId}</span>
+                                        </span>
+                                      )}
+                                      {cert.credentialUrl && (
+                                        <a
+                                          href={cert.credentialUrl}
+                                          target="_blank"
+                                          rel="noreferrer"
+                                          className={`text-xs hover:underline inline-flex items-center gap-1 ${ui.accentText}`}
+                                        >
+                                          <span>Verify URL</span>
+                                          <ExternalLink className="w-3 h-3" />
+                                        </a>
+                                      )}
+                                    </div>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              {isEditing ? (
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleUpdateCertification(cert.id)}
+                                    className="px-2.5 py-1 rounded-lg bg-[#2563EB] text-white text-xs font-semibold"
+                                  >
+                                    Save
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setEditingCertId(null)}
+                                    className={`px-2.5 py-1 rounded-lg border text-xs ${ui.secondaryBtn}`}
+                                  >
+                                    Cancel
+                                  </button>
+                                </>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setEditingCertId(cert.id);
+                                    setEditingCertTitle(cert.title);
+                                    setEditingCertIssuer(cert.issuer);
+                                    setEditingCertDate(cert.issueDate || '');
+                                    setEditingCertUrl(cert.credentialUrl || '');
+                                    setEditingCertDesc(cert.description || '');
+                                  }}
+                                  className={`p-1.5 rounded-lg border text-xs ${ui.secondaryBtn}`}
+                                  title="Edit Certification"
+                                >
+                                  <Edit3 className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteCertification(cert.id)}
+                                className="p-1.5 rounded-lg border border-red-200 dark:border-red-900/40 text-red-500 hover:bg-red-500/10 text-xs"
+                                title="Delete Certification"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                           </div>
                         </div>
                       );

@@ -169,3 +169,21 @@ model ContactMessage {
   @@index([status, createdAt])
   @@map("contact_messages")
 }
+
+model Certification {
+  id             String   @id @default(uuid())
+  title          String
+  issuer         String
+  issueDate      String?
+  expiryDate     String?
+  credentialId   String?
+  credentialUrl  String?
+  imageUrl       String?
+  description    String?  @db.Text
+  displayOrder   Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([displayOrder])
+  @@map("certifications")
+}

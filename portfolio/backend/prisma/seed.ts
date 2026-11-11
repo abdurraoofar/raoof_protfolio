@@ -10,6 +10,7 @@ async function main() {
   console.log('Seeding portfolio database...');
 
   // 1. Clean existing records to allow idempotent re-seeding
+  await prisma.certification.deleteMany({});
   await prisma.contactMessage.deleteMany({});
   await prisma.socialLink.deleteMany({});
   await prisma.resume.deleteMany({});
@@ -313,6 +314,40 @@ async function main() {
   ];
   for (const s of socials) {
     await prisma.socialLink.create({ data: s });
+  }
+
+  // 10. Certifications
+  const certsData = [
+    {
+      title: 'Meta Certified Front-End Developer',
+      issuer: 'Meta (Coursera)',
+      issueDate: '2024',
+      credentialId: 'META-FE-92841',
+      credentialUrl: 'https://www.coursera.org',
+      description: 'React, modern JavaScript, UI/UX engineering, state management, and responsive design systems.',
+      displayOrder: 1
+    },
+    {
+      title: 'PostgreSQL Relational Database & SQL Mastery',
+      issuer: 'Udemy / Database Architecture',
+      issueDate: '2024',
+      credentialId: 'PG-SQL-77192',
+      credentialUrl: 'https://www.udemy.com',
+      description: 'Advanced relational modeling, complex SQL joins, indexing, and high-performance querying.',
+      displayOrder: 2
+    },
+    {
+      title: 'Full-Stack JavaScript & Express Web Engineering',
+      issuer: 'FreeCodeCamp / Open Tech',
+      issueDate: '2023',
+      credentialId: 'FCC-FS-55104',
+      credentialUrl: 'https://www.freecodecamp.org',
+      description: 'Node.js, Express REST APIs, JWT authentication, and security middleware pipelines.',
+      displayOrder: 3
+    }
+  ];
+  for (const c of certsData) {
+    await prisma.certification.create({ data: c });
   }
   console.log('✓ Seeded Social Links');
 
