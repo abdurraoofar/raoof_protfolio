@@ -81,7 +81,7 @@ async function main() {
       coverImageUrl:
         'https://images.unsplash.com/photo-1557821552-17105176677c?auto=format&fit=crop&w=1200&q=80',
       demoUrl: 'https://ecommerce.abdurraoof.dev',
-      githubUrl: 'https://github.com/Abdurraoof/ecommerce-engine',
+      githubUrl: 'https://github.com/abdurraoofar/ecommerce-engine',
       technologies: ['React.js', 'TypeScript', 'Node.js', 'PostgreSQL', 'Tailwind CSS'],
       featured: true,
       isPublished: true,
@@ -99,7 +99,7 @@ async function main() {
       coverImageUrl:
         'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80',
       demoUrl: 'https://ai-copilot.abdurraoof.dev',
-      githubUrl: 'https://github.com/Abdurraoof/ai-analytics-copilot',
+      githubUrl: 'https://github.com/abdurraoofar/ai-analytics-copilot',
       technologies: ['Next.js', 'TypeScript', 'Python', 'Prisma', 'Tailwind CSS'],
       featured: true,
       isPublished: true,
@@ -117,7 +117,7 @@ async function main() {
       coverImageUrl:
         'https://images.unsplash.com/photo-1504639725590-34d0984388bd?auto=format&fit=crop&w=1200&q=80',
       demoUrl: 'https://telemetry.abdurraoof.dev',
-      githubUrl: 'https://github.com/Abdurraoof/devops-dashboard',
+      githubUrl: 'https://github.com/abdurraoofar/devops-dashboard',
       technologies: ['React.js', 'TypeScript', 'Docker', 'Express.js', 'PostgreSQL'],
       featured: true,
       isPublished: true,
@@ -135,7 +135,7 @@ async function main() {
       coverImageUrl:
         'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&w=1200&q=80',
       demoUrl: 'https://healthhub.abdurraoof.dev',
-      githubUrl: 'https://github.com/Abdurraoof/healthcare-hub',
+      githubUrl: 'https://github.com/abdurraoofar/healthcare-hub',
       technologies: ['React.js', 'Node.js', 'Express.js', 'MongoDB', 'Tailwind CSS'],
       featured: false,
       isPublished: true,
@@ -295,13 +295,13 @@ async function main() {
   const socials = [
     {
       platform: 'GitHub',
-      url: 'https://github.com/Abdurraoof',
+      url: 'https://github.com/abdurraoofar',
       icon: 'Github',
       displayOrder: 1
     },
     {
       platform: 'LinkedIn',
-      url: 'https://linkedin.com/in/abdurraoof',
+      url: 'https://www.linkedin.com/in/abdur-raoof-2559562b9',
       icon: 'Linkedin',
       displayOrder: 2
     },

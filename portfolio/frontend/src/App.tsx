@@ -560,12 +560,12 @@ export function App() {
     availabilityLine: 'Chennai, India · Open to full-time roles & IT opportunities',
     email: 'raoofwebdev@gmail.com',
     githubUrl: 'https://github.com/abdurraoofar',
-    linkedinUrl: 'https://linkedin.com/in/abdurraoof'
+    linkedinUrl: 'https://www.linkedin.com/in/abdur-raoof-2559562b9'
   });
 
   const [socialLinks, setSocialLinks] = useState<SocialLinkItem[]>([
     { id: 'soc-1', platform: 'GitHub', url: 'https://github.com/abdurraoofar', icon: 'Github', isVisible: true, displayOrder: 1 },
-    { id: 'soc-2', platform: 'LinkedIn', url: 'https://linkedin.com/in/abdurraoof', icon: 'Linkedin', isVisible: true, displayOrder: 2 },
+    { id: 'soc-2', platform: 'LinkedIn', url: 'https://www.linkedin.com/in/abdur-raoof-2559562b9', icon: 'Linkedin', isVisible: true, displayOrder: 2 },
     { id: 'soc-3', platform: 'Email', url: 'mailto:raoofwebdev@gmail.com', icon: 'Mail', isVisible: true, displayOrder: 3 }
   ]);
   const [newSocialPlatform, setNewSocialPlatform] = useState('');
@@ -751,7 +751,7 @@ export function App() {
               category: (p.category as any) || 'Web',
               tags: Array.isArray(p.technologies) ? p.technologies : ['React', 'TypeScript'],
               image: p.coverImageUrl || '/proj_crm.png',
-              githubUrl: p.githubUrl || 'https://github.com/Abdurraoof',
+              githubUrl: p.githubUrl || 'https://github.com/abdurraoofar',
               demoUrl: p.demoUrl || 'https://example.com',
               published: p.isPublished,
               year: p.year || '2025'
