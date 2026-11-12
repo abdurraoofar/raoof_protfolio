@@ -48,6 +48,36 @@ import {
   Camera,
   Maximize2
 } from 'lucide-react';
+import {
+  SiReact,
+  SiTypescript,
+  SiTailwindcss,
+  SiHtml5,
+  SiNodedotjs,
+  SiJsonwebtokens,
+  SiPostgresql,
+  SiMongodb,
+  SiMysql,
+  SiPrisma,
+  SiDocker,
+  SiRedis,
+  SiPython,
+  SiNextdotjs,
+  SiGraphql,
+  SiGit,
+  SiGithub,
+  SiFirebase,
+  SiLinux,
+  SiVuedotjs,
+  SiAngular,
+  SiCplusplus,
+  SiPostman,
+  SiVite,
+  SiFigma,
+  SiKubernetes,
+  SiNginx,
+  SiJavascript
+} from 'react-icons/si';
 
 type EnvMode = 'development' | 'production';
 type PageRoute = 'home' | 'about' | 'experience' | 'projects' | 'certifications' | 'contact' | 'admin';
@@ -297,6 +327,167 @@ const INITIAL_SKILLS: SkillItem[] = [
   { id: 'sk-11', name: 'Git & GitHub', category: 'Workflow', detail: 'Version control, branch management, collaborative code', code: 'TL-01' },
   { id: 'sk-12', name: 'Vite & Tooling', category: 'Workflow', detail: 'Fast modern bundling, HMR, deployment', code: 'TL-02' }
 ];
+
+interface TechSkillDef {
+  id: string;
+  name: string;
+  description: string;
+  icon: React.ComponentType<{ className?: string; style?: React.CSSProperties; title?: string }>;
+  color: string;
+  lightTile: string;
+  darkTile: string;
+}
+
+interface TechCategoryGroup {
+  category: string;
+  skills: TechSkillDef[];
+}
+
+const TECH_SKILL_GROUPS: TechCategoryGroup[] = [
+  {
+    category: 'Frontend',
+    skills: [
+      {
+        id: 'react',
+        name: 'React.js',
+        description: 'Component architecture, Hooks, state management, SPA',
+        icon: SiReact,
+        color: '#61DAFB',
+        lightTile: 'bg-sky-50 border-sky-200 text-[#0284C7]',
+        darkTile: 'bg-sky-500/10 border-sky-500/20 text-[#61DAFB]'
+      },
+      {
+        id: 'typescript',
+        name: 'TypeScript',
+        description: 'Strict static typing, interfaces, type inference',
+        icon: SiTypescript,
+        color: '#3178C6',
+        lightTile: 'bg-blue-50 border-blue-200 text-[#3178C6]',
+        darkTile: 'bg-blue-500/10 border-blue-500/20 text-[#3178C6]'
+      },
+      {
+        id: 'tailwind',
+        name: 'Tailwind CSS',
+        description: 'Utility-first styling, responsive layouts, theme tokens',
+        icon: SiTailwindcss,
+        color: '#06B6D4',
+        lightTile: 'bg-cyan-50 border-cyan-200 text-[#0891B2]',
+        darkTile: 'bg-cyan-500/10 border-cyan-500/20 text-[#06B6D4]'
+      },
+      {
+        id: 'html-css',
+        name: 'HTML5 & Modern CSS',
+        description: 'Semantic markup, Flexbox, CSS Grid, animations',
+        icon: SiHtml5,
+        color: '#E34F26',
+        lightTile: 'bg-orange-50 border-orange-200 text-[#E34F26]',
+        darkTile: 'bg-orange-500/10 border-orange-500/20 text-[#E34F26]'
+      }
+    ]
+  },
+  {
+    category: 'Backend',
+    skills: [
+      {
+        id: 'nodejs',
+        name: 'Node.js & Express.js',
+        description: 'REST APIs, middleware pipelines, MVC pattern',
+        icon: SiNodedotjs,
+        color: '#5FA04E',
+        lightTile: 'bg-emerald-50 border-emerald-200 text-[#3E7B2E]',
+        darkTile: 'bg-emerald-500/10 border-emerald-500/20 text-[#5FA04E]'
+      },
+      {
+        id: 'jwt-auth',
+        name: 'REST API & JWT Auth',
+        description: 'Token authentication, HTTP-only cookies, security',
+        icon: SiJsonwebtokens,
+        color: '#D63AFF',
+        lightTile: 'bg-purple-50 border-purple-200 text-[#A817D8]',
+        darkTile: 'bg-purple-500/10 border-purple-500/20 text-[#D63AFF]'
+      }
+    ]
+  },
+  {
+    category: 'Databases & ORM',
+    skills: [
+      {
+        id: 'postgresql',
+        name: 'PostgreSQL',
+        description: 'Relational data modeling, SQL queries, relational integrity',
+        icon: SiPostgresql,
+        color: '#336791',
+        lightTile: 'bg-indigo-50 border-indigo-200 text-[#336791]',
+        darkTile: 'bg-indigo-500/10 border-indigo-500/20 text-[#4E88B8]'
+      },
+      {
+        id: 'mongodb',
+        name: 'MongoDB',
+        description: 'NoSQL document modeling, JSON collections, queries',
+        icon: SiMongodb,
+        color: '#47A248',
+        lightTile: 'bg-green-50 border-green-200 text-[#328433]',
+        darkTile: 'bg-green-500/10 border-green-500/20 text-[#47A248]'
+      },
+      {
+        id: 'mysql',
+        name: 'MySQL',
+        description: 'Relational database schemas, joins, transactions',
+        icon: SiMysql,
+        color: '#4479A1',
+        lightTile: 'bg-sky-50 border-sky-200 text-[#00758F]',
+        darkTile: 'bg-sky-500/10 border-sky-500/20 text-[#4479A1]'
+      },
+      {
+        id: 'prisma',
+        name: 'Prisma ORM',
+        description: 'Type-safe database client, migrations, schema modeling',
+        icon: SiPrisma,
+        color: 'currentColor',
+        lightTile: 'bg-slate-100 border-slate-200 text-slate-800',
+        darkTile: 'bg-slate-500/10 border-slate-500/20 text-slate-200'
+      }
+    ]
+  }
+];
+
+const getSkillIconMeta = (name: string, category: string = '') => {
+  const n = (name || '').toLowerCase();
+  if (n.includes('react')) return { icon: SiReact, color: '#61DAFB', lightTile: 'bg-sky-50 border-sky-200 text-[#0284C7]', darkTile: 'bg-sky-500/10 border-sky-500/20 text-[#61DAFB]' };
+  if (n.includes('type') || n === 'ts') return { icon: SiTypescript, color: '#3178C6', lightTile: 'bg-blue-50 border-blue-200 text-[#3178C6]', darkTile: 'bg-blue-500/10 border-blue-500/20 text-[#3178C6]' };
+  if (n.includes('tailwind')) return { icon: SiTailwindcss, color: '#06B6D4', lightTile: 'bg-cyan-50 border-cyan-200 text-[#0891B2]', darkTile: 'bg-cyan-500/10 border-cyan-500/20 text-[#06B6D4]' };
+  if (n.includes('html') || n.includes('css')) return { icon: SiHtml5, color: '#E34F26', lightTile: 'bg-orange-50 border-orange-200 text-[#E34F26]', darkTile: 'bg-orange-500/10 border-orange-500/20 text-[#E34F26]' };
+  if (n.includes('node') || n.includes('express')) return { icon: SiNodedotjs, color: '#5FA04E', lightTile: 'bg-emerald-50 border-emerald-200 text-[#3E7B2E]', darkTile: 'bg-emerald-500/10 border-emerald-500/20 text-[#5FA04E]' };
+  if (n.includes('api') || n.includes('jwt') || n.includes('auth')) return { icon: SiJsonwebtokens, color: '#D63AFF', lightTile: 'bg-purple-50 border-purple-200 text-[#A817D8]', darkTile: 'bg-purple-500/10 border-purple-500/20 text-[#D63AFF]' };
+  if (n.includes('postgre') || n.includes('psql')) return { icon: SiPostgresql, color: '#336791', lightTile: 'bg-indigo-50 border-indigo-200 text-[#336791]', darkTile: 'bg-indigo-500/10 border-indigo-500/20 text-[#4E88B8]' };
+  if (n.includes('mongo')) return { icon: SiMongodb, color: '#47A248', lightTile: 'bg-green-50 border-green-200 text-[#328433]', darkTile: 'bg-green-500/10 border-green-500/20 text-[#47A248]' };
+  if (n.includes('mysql')) return { icon: SiMysql, color: '#4479A1', lightTile: 'bg-sky-50 border-sky-200 text-[#00758F]', darkTile: 'bg-sky-500/10 border-sky-500/20 text-[#4479A1]' };
+  if (n.includes('prisma')) return { icon: SiPrisma, color: 'currentColor', lightTile: 'bg-slate-100 border-slate-200 text-slate-800', darkTile: 'bg-slate-500/10 border-slate-500/20 text-slate-200' };
+  if (n.includes('docker')) return { icon: SiDocker, color: '#2496ED', lightTile: 'bg-sky-50 border-sky-200 text-[#2496ED]', darkTile: 'bg-sky-500/10 border-sky-500/20 text-[#2496ED]' };
+  if (n.includes('redis')) return { icon: SiRedis, color: '#DC382D', lightTile: 'bg-rose-50 border-rose-200 text-[#DC382D]', darkTile: 'bg-rose-500/10 border-rose-500/20 text-[#DC382D]' };
+  if (n.includes('python')) return { icon: SiPython, color: '#3776AB', lightTile: 'bg-blue-50 border-blue-200 text-[#3776AB]', darkTile: 'bg-blue-500/10 border-blue-500/20 text-[#3776AB]' };
+  if (n.includes('next')) return { icon: SiNextdotjs, color: 'currentColor', lightTile: 'bg-neutral-100 border-neutral-300 text-neutral-900', darkTile: 'bg-neutral-800 border-neutral-700 text-white' };
+  if (n.includes('graph')) return { icon: SiGraphql, color: '#E10098', lightTile: 'bg-pink-50 border-pink-200 text-[#E10098]', darkTile: 'bg-pink-500/10 border-pink-500/20 text-[#E10098]' };
+  if (n.includes('git') || n.includes('hub')) return { icon: SiGit, color: '#F05032', lightTile: 'bg-orange-50 border-orange-200 text-[#F05032]', darkTile: 'bg-orange-500/10 border-orange-500/20 text-[#F05032]' };
+  if (n.includes('vue')) return { icon: SiVuedotjs, color: '#4FC08D', lightTile: 'bg-emerald-50 border-emerald-200 text-[#4FC08D]', darkTile: 'bg-emerald-500/10 border-emerald-500/20 text-[#4FC08D]' };
+  if (n.includes('angular')) return { icon: SiAngular, color: '#DD0031', lightTile: 'bg-red-50 border-red-200 text-[#DD0031]', darkTile: 'bg-red-500/10 border-red-500/20 text-[#DD0031]' };
+  if (n.includes('cpp') || n.includes('c++')) return { icon: SiCplusplus, color: '#00599C', lightTile: 'bg-blue-50 border-blue-200 text-[#00599C]', darkTile: 'bg-blue-500/10 border-blue-500/20 text-[#00599C]' };
+  if (n.includes('postman')) return { icon: SiPostman, color: '#FF6C37', lightTile: 'bg-orange-50 border-orange-200 text-[#FF6C37]', darkTile: 'bg-orange-500/10 border-orange-500/20 text-[#FF6C37]' };
+  if (n.includes('vite')) return { icon: SiVite, color: '#646CFF', lightTile: 'bg-violet-50 border-violet-200 text-[#646CFF]', darkTile: 'bg-violet-500/10 border-violet-500/20 text-[#646CFF]' };
+  if (n.includes('figma')) return { icon: SiFigma, color: '#F24E1E', lightTile: 'bg-orange-50 border-orange-200 text-[#F24E1E]', darkTile: 'bg-orange-500/10 border-orange-500/20 text-[#F24E1E]' };
+  if (n.includes('k8s') || n.includes('kube')) return { icon: SiKubernetes, color: '#326CE5', lightTile: 'bg-blue-50 border-blue-200 text-[#326CE5]', darkTile: 'bg-blue-500/10 border-blue-500/20 text-[#326CE5]' };
+  if (n.includes('nginx')) return { icon: SiNginx, color: '#009639', lightTile: 'bg-emerald-50 border-emerald-200 text-[#009639]', darkTile: 'bg-emerald-500/10 border-emerald-500/20 text-[#009639]' };
+  if (n.includes('js') || n.includes('javascript')) return { icon: SiJavascript, color: '#F7DF1E', lightTile: 'bg-amber-50 border-amber-200 text-amber-700', darkTile: 'bg-amber-500/10 border-amber-500/20 text-[#F7DF1E]' };
+  if (n.includes('firebase')) return { icon: SiFirebase, color: '#FFCA28', lightTile: 'bg-amber-50 border-amber-200 text-amber-700', darkTile: 'bg-amber-500/10 border-amber-500/20 text-[#FFCA28]' };
+  if (n.includes('linux')) return { icon: SiLinux, color: '#FCC624', lightTile: 'bg-yellow-50 border-yellow-200 text-yellow-800', darkTile: 'bg-yellow-500/10 border-yellow-500/20 text-[#FCC624]' };
+
+  // Category based fallback
+  const cat = (category || '').toLowerCase();
+  if (cat.includes('front')) return { icon: Code2, color: '#2563EB', lightTile: 'bg-blue-50 border-blue-200 text-blue-600', darkTile: 'bg-blue-500/10 border-blue-500/20 text-blue-400' };
+  if (cat.includes('back')) return { icon: Server, color: '#10B981', lightTile: 'bg-emerald-50 border-emerald-200 text-emerald-600', darkTile: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' };
+  if (cat.includes('data')) return { icon: Database, color: '#6366F1', lightTile: 'bg-indigo-50 border-indigo-200 text-indigo-600', darkTile: 'bg-indigo-500/10 border-indigo-500/20 text-indigo-400' };
+  return { icon: Layers, color: '#3B82F6', lightTile: 'bg-blue-50 border-blue-200 text-blue-600', darkTile: 'bg-blue-500/10 border-blue-500/20 text-blue-400' };
+};
 
 const INITIAL_ENQUIRIES: EnquiryItem[] = [
   {
@@ -588,6 +779,40 @@ export function App() {
   const [selectedProject, setSelectedProject] = useState<ProjectItem | null>(null);
 
   const [skills, setSkills] = useState<SkillItem[]>(INITIAL_SKILLS);
+
+  const displaySkillGroups = React.useMemo(() => {
+    const frontendSkills: TechSkillDef[] = [];
+    const backendSkills: TechSkillDef[] = [];
+    const databaseSkills: TechSkillDef[] = [];
+    const otherSkills: TechSkillDef[] = [];
+
+    skills.forEach((sk) => {
+      const meta = getSkillIconMeta(sk.name, sk.category);
+      const item: TechSkillDef = {
+        id: sk.id,
+        name: sk.name,
+        description: sk.detail || 'Production engineering expertise',
+        icon: meta.icon,
+        color: meta.color,
+        lightTile: meta.lightTile,
+        darkTile: meta.darkTile
+      };
+
+      const c = (sk.category || '').toLowerCase();
+      if (c.includes('front')) frontendSkills.push(item);
+      else if (c.includes('back')) backendSkills.push(item);
+      else if (c.includes('data')) databaseSkills.push(item);
+      else otherSkills.push(item);
+    });
+
+    const groups: TechCategoryGroup[] = [];
+    if (frontendSkills.length) groups.push({ category: 'Frontend', skills: frontendSkills });
+    if (backendSkills.length) groups.push({ category: 'Backend', skills: backendSkills });
+    if (databaseSkills.length) groups.push({ category: 'Databases & ORM', skills: databaseSkills });
+    if (otherSkills.length) groups.push({ category: 'Workflow & Tools', skills: otherSkills });
+
+    return groups.length ? groups : TECH_SKILL_GROUPS;
+  }, [skills]);
   const [experiences, setExperiences] = useState<ExperienceItem[]>(INITIAL_EXPERIENCE);
   const [educations, setEducations] = useState<EducationItem[]>(INITIAL_EDUCATION);
   const [certifications, setCertifications] = useState<CertificationItem[]>(INITIAL_CERTIFICATIONS);
@@ -2356,80 +2581,63 @@ export function App() {
               02 / TECHNICAL EXPERTISE & SKILLS SECTION
              ===================================================================== */}
           <section id="skills-section" className={`py-14 border-t space-y-8 ${ui.divider}`}>
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-              <div>
-                <h2 className={`text-2xl sm:text-3xl font-bold tracking-tight ${ui.heading}`}>
-                  Skills &amp; Technologies
-                </h2>
-                <p className={`text-xs sm:text-sm mt-1 max-w-xl ${ui.body}`}>
-                  Languages, frameworks, databases, and development tooling I leverage across the full stack.
-                </p>
-              </div>
-
-              {/* Category Filter Pills */}
-              <div className={`flex items-center gap-1.5 p-1 rounded-xl border overflow-x-auto no-scrollbar max-w-full ${ui.card}`}>
-                {['All', 'Frontend', 'Backend', 'Database', 'Workflow'].map((cat) => {
-                  const active = homeSkillFilter === cat;
-                  return (
-                    <button
-                      key={cat}
-                      type="button"
-                      onClick={() => setHomeSkillFilter(cat)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition ${
-                        active
-                          ? 'bg-[#2563EB] text-white shadow-xs'
-                          : isDark
-                          ? 'text-gray-400 hover:text-white hover:bg-white/5'
-                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                      }`}
-                    >
-                      {cat}
-                    </button>
-                  );
-                })}
-              </div>
+            <div>
+              <h2 className={`text-2xl sm:text-3xl font-bold tracking-tight ${ui.heading}`}>
+                Skills &amp; Technologies
+              </h2>
+              <p className={`text-xs sm:text-sm mt-1 max-w-xl ${ui.body}`}>
+                Languages, frameworks, databases, and development tooling I leverage across the full stack.
+              </p>
             </div>
 
-            {/* Skills Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {skills
-                .filter((sk) => {
-                  if (homeSkillFilter === 'All') return true;
-                  if (homeSkillFilter === 'Workflow') {
-                    return sk.category === 'Workflow' || sk.category === 'AI & Tools' || sk.category === 'AI & Data';
-                  }
-                  return sk.category === homeSkillFilter;
-                })
-                .map((sk) => {
-                  const IconComp =
-                    sk.name.includes('React') || sk.name.includes('Next') ? Code2 :
-                    sk.name.includes('Tailwind') ? Layers :
-                    sk.name.includes('HTML') || sk.name.includes('Type') ? Terminal :
-                    sk.name.includes('Node') || sk.name.includes('Express') ? Server :
-                    sk.name.includes('API') || sk.name.includes('Auth') ? ShieldCheck :
-                    sk.name.includes('Postgres') || sk.name.includes('Mongo') || sk.name.includes('MySQL') || sk.name.includes('Prisma') ? Database :
-                    sk.name.includes('Git') ? Github :
-                    Layers;
+            <div className="space-y-8">
+              {displaySkillGroups.map((group) => (
+                <div key={group.category} className="space-y-3.5">
+                  <div className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#2563EB]" />
+                    <h3 className={`text-xs font-mono font-bold uppercase tracking-wider ${ui.muted}`}>
+                      {group.category}
+                    </h3>
+                  </div>
 
-                  return (
-                    <div
-                      key={sk.id}
-                      className={`rounded-xl border p-4.5 flex flex-col justify-between gap-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${ui.card} ${ui.cardHover}`}
-                    >
-                      <div className="w-9 h-9 rounded-lg bg-[#2563EB] text-white flex items-center justify-center shrink-0 shadow-sm">
-                        <IconComp className="w-4 h-4" />
+                  <div
+                    className={`grid grid-cols-1 sm:grid-cols-2 ${
+                      group.skills.length === 2 ? 'lg:grid-cols-2' : 'lg:grid-cols-4'
+                    } gap-4`}
+                  >
+                    {group.skills.map((skill) => (
+                      <div
+                        key={skill.id}
+                        className={`rounded-xl border p-4 flex items-center gap-3.5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${ui.card} ${ui.cardHover}`}
+                      >
+                        <div
+                          className={`w-10 h-10 rounded-xl flex items-center justify-center border shrink-0 transition-colors ${
+                            isDark ? skill.darkTile : skill.lightTile
+                          }`}
+                          title={skill.name}
+                          aria-label={`${skill.name} logo`}
+                        >
+                          <skill.icon
+                            className="w-5 h-5"
+                            style={skill.color === 'currentColor' ? undefined : { color: skill.color }}
+                          />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <h4 className={`font-bold text-sm sm:text-base leading-snug truncate ${ui.heading}`}>
+                            {skill.name}
+                          </h4>
+                          <p
+                            className="text-xs sm:text-sm mt-0.5 leading-snug truncate text-gray-500 dark:text-gray-400"
+                            title={skill.description}
+                          >
+                            {skill.description}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <h3 className={`font-bold text-sm sm:text-base ${ui.heading}`}>
-                          {sk.name}
-                        </h3>
-                        <p className={`text-xs sm:text-[13px] mt-1 leading-relaxed ${ui.muted}`}>
-                          {sk.detail}
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })}
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
           </section>
 
