@@ -1482,6 +1482,27 @@ export function App() {
     }
   };
 
+  const processImageFile = async (file: File, target: 'about' | 'hero') => {
+    if (!file.type.startsWith('image/')) {
+      showToast('Please select a valid image file (PNG, JPG, WebP).');
+      return;
+    }
+    try {
+      showToast('Processing photo from device...');
+      const compressed = await compressCertificateImage(file);
+      if (target === 'about') {
+        setProfile((prev) => ({ ...prev, aboutImageUrl: compressed }));
+        showToast('About photo updated! Click "Save Profile Changes" to save.');
+      } else {
+        setProfile((prev) => ({ ...prev, avatarUrl: compressed }));
+        showToast('Hero photo updated! Click "Save Profile Changes" to save.');
+      }
+    } catch (err) {
+      console.warn('Error reading image file:', err);
+      showToast('Could not process image file.');
+    }
+  };
+
   const handleAddSocialLink = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newSocialPlatform.trim() || !newSocialUrl.trim()) return;
@@ -4049,63 +4070,148 @@ export function App() {
                     </div>
                   </div>
 
-                  {/* Public Site Imagery & Photos */}
-                  <div className="pt-3 border-t border-gray-200 dark:border-gray-800 space-y-4">
-                    <h3 className={`text-sm font-bold ${ui.heading}`}>Public Profile Photos</h3>
-                    
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {/* About Image */}
-                      <div className="space-y-2">
-                        <label className={`block text-xs font-semibold ${ui.heading}`}>About Me Section Photo URL</label>
-                        <input
-                          type="text"
-                          value={profile.aboutImageUrl || ''}
-                          onChange={(e) => setProfile({ ...profile, aboutImageUrl: e.target.value })}
-                          placeholder="/portrait_light_cutout.png"
-                          className={`w-full rounded-xl border px-3 py-2 text-sm ${ui.input}`}
-                        />
-                        <div className="flex items-center gap-2">
+                  {/* Public Site Imagery & Photos - Drag & Drop / Device Upload */}
+                  <div className="pt-4 border-t border-gray-200 dark:border-gray-800 space-y-4">
+                    <div>
+                      <h3 className={`text-base font-bold ${ui.heading}`}>Public Profile Photos</h3>
+                      <p className={`text-xs mt-0.5 ${ui.muted}`}>
+                        Click or drag &amp; drop any image from your computer or phone to update your photos.
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* 1. About Me Photo Card */}
+                      <div className={`p-4 rounded-xl border space-y-3 ${ui.subtleSurface}`}>
+                        <div className="flex items-center justify-between">
+                          <label className={`text-xs font-semibold ${ui.heading}`}>About Me Section Photo</label>
+                          <span className="text-[10px] font-mono font-medium text-[#3B82F6] px-2 py-0.5 rounded bg-[#2563EB]/10">
+                            Live on /about
+                          </span>
+                        </div>
+
+                        {/* Dropzone */}
+                        <label
+                          onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                              processImageFile(e.dataTransfer.files[0], 'about');
+                            }
+                          }}
+                          className="relative border-2 border-dashed border-[#2563EB]/40 hover:border-[#2563EB] rounded-xl p-4 text-center cursor-pointer bg-black/5 dark:bg-white/5 hover:bg-[#2563EB]/5 transition flex flex-col items-center justify-center min-h-[170px] block"
+                        >
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => {
+                              if (e.target.files && e.target.files[0]) {
+                                processImageFile(e.target.files[0], 'about');
+                              }
+                            }}
+                            className="hidden"
+                          />
+
+                          {profile.aboutImageUrl ? (
+                            <div className="relative w-24 h-24 rounded-lg overflow-hidden border shadow-sm mb-2">
+                              <img
+                                src={profile.aboutImageUrl}
+                                alt="About Preview"
+                                className="w-full h-full object-cover object-top"
+                              />
+                            </div>
+                          ) : (
+                            <div className="w-12 h-12 rounded-full bg-[#2563EB]/10 text-[#3B82F6] flex items-center justify-center mb-2">
+                              <ImageIcon className="w-6 h-6" />
+                            </div>
+                          )}
+
+                          <div className={`text-xs font-semibold ${ui.heading}`}>
+                            Drop image here, or click to browse
+                          </div>
+                          <div className={`text-[11px] mt-0.5 ${ui.muted}`}>
+                            Select any PNG, JPG, or WebP photo
+                          </div>
+                        </label>
+
+                        <div className="flex items-center justify-between gap-2 pt-1 text-xs">
                           <button
                             type="button"
-                            onClick={() => setProfile({ ...profile, aboutImageUrl: '/portrait_light_cutout.png' })}
-                            className="text-[11px] px-2 py-1 rounded bg-[#2563EB]/10 text-[#3B82F6] hover:underline"
+                            onClick={() => {
+                              setProfile((prev) => ({ ...prev, aboutImageUrl: '/portrait_light_cutout.png' }));
+                              showToast('Reset About photo to default');
+                            }}
+                            className="text-[11px] text-[#3B82F6] hover:underline"
                           >
-                            Use Light Portrait
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setProfile({ ...profile, aboutImageUrl: '/portrait_cutout.png' })}
-                            className="text-[11px] px-2 py-1 rounded bg-gray-500/10 text-gray-400 hover:underline"
-                          >
-                            Use Dark Cutout
+                            Reset to default portrait
                           </button>
                         </div>
                       </div>
 
-                      {/* Hero Image */}
-                      <div className="space-y-2">
-                        <label className={`block text-xs font-semibold ${ui.heading}`}>Hero Portrait Photo URL</label>
-                        <input
-                          type="text"
-                          value={profile.avatarUrl || ''}
-                          onChange={(e) => setProfile({ ...profile, avatarUrl: e.target.value })}
-                          placeholder="/portrait_light_cutout.png"
-                          className={`w-full rounded-xl border px-3 py-2 text-sm ${ui.input}`}
-                        />
-                        <div className="flex items-center gap-2">
+                      {/* 2. Hero Portrait Photo Card */}
+                      <div className={`p-4 rounded-xl border space-y-3 ${ui.subtleSurface}`}>
+                        <div className="flex items-center justify-between">
+                          <label className={`text-xs font-semibold ${ui.heading}`}>Hero Home Portrait</label>
+                          <span className="text-[10px] font-mono font-medium text-[#3B82F6] px-2 py-0.5 rounded bg-[#2563EB]/10">
+                            Live on Home
+                          </span>
+                        </div>
+
+                        {/* Dropzone */}
+                        <label
+                          onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                              processImageFile(e.dataTransfer.files[0], 'hero');
+                            }
+                          }}
+                          className="relative border-2 border-dashed border-[#2563EB]/40 hover:border-[#2563EB] rounded-xl p-4 text-center cursor-pointer bg-black/5 dark:bg-white/5 hover:bg-[#2563EB]/5 transition flex flex-col items-center justify-center min-h-[170px] block"
+                        >
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => {
+                              if (e.target.files && e.target.files[0]) {
+                                processImageFile(e.target.files[0], 'hero');
+                              }
+                            }}
+                            className="hidden"
+                          />
+
+                          {profile.avatarUrl ? (
+                            <div className="relative w-24 h-24 rounded-lg overflow-hidden border shadow-sm mb-2">
+                              <img
+                                src={profile.avatarUrl}
+                                alt="Hero Preview"
+                                className="w-full h-full object-cover object-top"
+                              />
+                            </div>
+                          ) : (
+                            <div className="w-12 h-12 rounded-full bg-[#2563EB]/10 text-[#3B82F6] flex items-center justify-center mb-2">
+                              <ImageIcon className="w-6 h-6" />
+                            </div>
+                          )}
+
+                          <div className={`text-xs font-semibold ${ui.heading}`}>
+                            Drop image here, or click to browse
+                          </div>
+                          <div className={`text-[11px] mt-0.5 ${ui.muted}`}>
+                            Select any PNG, JPG, or WebP photo
+                          </div>
+                        </label>
+
+                        <div className="flex items-center justify-between gap-2 pt-1 text-xs">
                           <button
                             type="button"
-                            onClick={() => setProfile({ ...profile, avatarUrl: '/portrait_light_cutout.png' })}
-                            className="text-[11px] px-2 py-1 rounded bg-[#2563EB]/10 text-[#3B82F6] hover:underline"
+                            onClick={() => {
+                              setProfile((prev) => ({ ...prev, avatarUrl: '/portrait_light_cutout.png' }));
+                              showToast('Reset Hero photo to default');
+                            }}
+                            className="text-[11px] text-[#3B82F6] hover:underline"
                           >
-                            Use Light Portrait
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setProfile({ ...profile, avatarUrl: '/portrait_cutout.png' })}
-                            className="text-[11px] px-2 py-1 rounded bg-gray-500/10 text-gray-400 hover:underline"
-                          >
-                            Use Dark Cutout
+                            Reset to default portrait
                           </button>
                         </div>
                       </div>
