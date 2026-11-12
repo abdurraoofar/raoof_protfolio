@@ -1743,7 +1743,7 @@ export function App() {
 
   return (
     <div
-      className={`min-h-screen font-sans antialiased transition-colors duration-200 selection:bg-[#2563EB]/20 selection:text-[#2563EB] ${ui.pageBg}`}
+      className={`min-h-screen w-full overflow-x-hidden font-sans antialiased transition-colors duration-200 selection:bg-[#2563EB]/20 selection:text-[#2563EB] ${ui.pageBg}`}
     >
       {/* Toast Notification */}
       {toastMessage && (
@@ -1787,7 +1787,7 @@ export function App() {
             </div>
 
             {/* Primary Desktop Navigation Links */}
-            <nav className="hidden md:flex items-center gap-7 text-sm ml-6">
+            <nav className="hidden lg:flex items-center gap-5 xl:gap-7 text-sm ml-4 xl:ml-6">
               {[
                 { id: 'home', label: 'Home' },
                 { id: 'about', label: 'About' },
@@ -1825,7 +1825,7 @@ export function App() {
             <div className="flex items-center gap-2 sm:gap-3">
               {/* Desktop Theme Toggle Pill */}
               <div
-                className={`hidden md:inline-flex items-center rounded-lg p-0.5 border ${
+                className={`hidden lg:inline-flex items-center rounded-lg p-0.5 border ${
                   isDark ? 'bg-[#121621] border-[#252C3E]' : 'bg-[#F3F4F6] border-[#E5E7EB]'
                 }`}
               >
@@ -1862,7 +1862,7 @@ export function App() {
                 type="button"
                 onClick={toggleTheme}
                 title="Toggle Theme"
-                className={`md:hidden w-9 h-9 rounded-xl border flex items-center justify-center transition ${ui.secondaryBtn}`}
+                className={`lg:hidden w-9 h-9 rounded-xl border flex items-center justify-center transition ${ui.secondaryBtn}`}
               >
                 {isDark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-gray-700" />}
               </button>
@@ -1871,7 +1871,7 @@ export function App() {
               <button
                 type="button"
                 onClick={() => setShowResumeModal(true)}
-                className={`hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition ${
+                className={`hidden lg:inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition ${
                   isDark
                     ? 'bg-[#FFFFFF] hover:bg-gray-200 text-[#090B10]'
                     : 'bg-[#111827] hover:bg-gray-800 text-[#FFFFFF]'
@@ -1886,7 +1886,7 @@ export function App() {
                 type="button"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 aria-label="Toggle navigation menu"
-                className={`md:hidden w-9 h-9 rounded-xl border flex items-center justify-center transition ${ui.secondaryBtn}`}
+                className={`lg:hidden w-9 h-9 rounded-xl border flex items-center justify-center transition ${ui.secondaryBtn}`}
               >
                 {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
               </button>
@@ -1896,7 +1896,7 @@ export function App() {
           {/* Polished Mobile Drawer */}
           {mobileMenuOpen && (
             <div
-              className={`md:hidden border-t px-4 pt-3 pb-5 space-y-4 shadow-2xl ${
+              className={`lg:hidden border-t px-4 pt-3 pb-5 space-y-4 shadow-2xl ${
                 isDark ? 'bg-[#090B10] border-[#1C202B]' : 'bg-white border-gray-100'
               }`}
             >
@@ -1909,7 +1909,7 @@ export function App() {
                       setCurrentPage(route);
                       setMobileMenuOpen(false);
                     }}
-                    className={`block w-full text-left px-3.5 py-2.5 rounded-xl text-sm font-semibold capitalize transition ${
+                    className={`block w-full text-left px-4 py-3 rounded-xl text-base font-semibold capitalize transition ${
                       currentPage === route
                         ? 'bg-[#2563EB]/15 text-[#3B82F6]'
                         : isDark
@@ -1970,7 +1970,7 @@ export function App() {
 
                 <div className="space-y-2">
                   <h1
-                    className={`text-3xl sm:text-5xl lg:text-[54px] font-extrabold tracking-tight leading-[1.12] ${ui.heading}`}
+                    className={`text-3xl sm:text-4xl md:text-5xl lg:text-[54px] font-extrabold tracking-tight leading-[1.12] ${ui.heading}`}
                   >
                     Hi, I&apos;m
                     <br />
@@ -2043,37 +2043,41 @@ export function App() {
                 </div>
               </div>
 
-              {/* Right Column: Studio Portrait with Subtle Architectural Frame */}
-              <div className="lg:col-span-6 relative flex items-end justify-center pt-2 sm:pt-0">
-                <div className="relative w-full max-w-[320px] sm:max-w-[460px] h-[300px] xs:h-[360px] sm:h-[465px] flex items-end justify-center">
-                  {isDark ? (
-                    <>
-                      <div className="absolute inset-x-6 top-6 bottom-0 rounded-[32px] bg-gradient-to-b from-[#131824] to-[#0D1018] border border-[#23293A] transform -rotate-2" />
-                      <div
-                        className="pointer-events-none absolute w-[260px] sm:w-[320px] h-[260px] sm:h-[320px] rounded-full blur-[70px] opacity-60"
-                        style={{
-                          background:
-                            'radial-gradient(circle, rgba(59, 130, 246, 0.45) 0%, rgba(37, 99, 235, 0.12) 60%, transparent 75%)',
-                          top: '14%'
-                        }}
-                      />
-                    </>
-                  ) : (
-                    <>
-                      <div className="absolute inset-x-6 top-6 bottom-0 rounded-[32px] bg-gradient-to-tr from-[#DBEAFE]/80 via-[#EFF6FF] to-[#F8FAFC] border border-blue-100 transform -rotate-2" />
-                      <div className="absolute inset-x-10 top-10 bottom-0 rounded-[28px] bg-[#EFF6FF]/60 border border-white transform rotate-1" />
-                    </>
-                  )}
-
-                  <img
-                    src={
+              {/* Right Column: Studio Portrait with Architectural Frame & Symmetrical Glow */}
+              <div className="lg:col-span-6 relative flex items-center justify-center pt-4 lg:pt-0">
+                <div className="relative w-full max-w-[280px] xs:max-w-[320px] sm:max-w-[380px] lg:max-w-[420px] mx-auto">
+                  {/* Symmetrical Ambient Glow Aura */}
+                  <div
+                    className={`absolute -inset-2.5 sm:-inset-3.5 rounded-[36px] blur-2xl opacity-60 transition-opacity ${
                       isDark
-                        ? '/portrait_cutout.png'
-                        : '/portrait_light_cutout.png'
-                    }
-                    alt={profile.name}
-                    className="relative z-10 h-[290px] xs:h-[350px] sm:h-[450px] w-auto object-contain object-bottom select-none drop-shadow-xl"
+                        ? 'bg-gradient-to-tr from-blue-600/35 via-indigo-500/20 to-emerald-500/10'
+                        : 'bg-gradient-to-tr from-blue-400/30 via-indigo-200/30 to-sky-100/40'
+                    }`}
                   />
+                  {/* Clean Showcase Frame (Symmetrical & Modern — No Crooked / Cutoff Edges) */}
+                  <div
+                    className={`relative rounded-[28px] sm:rounded-[32px] overflow-hidden border shadow-xl transition-all ${
+                      isDark
+                        ? 'bg-gradient-to-b from-[#131824] to-[#0D1018] border-[#252C3E]'
+                        : 'bg-gradient-to-b from-white via-blue-50/30 to-white border-blue-100/80 shadow-blue-500/5'
+                    }`}
+                  >
+                    <img
+                      src={
+                        isDark
+                          ? '/portrait_cutout.png'
+                          : '/portrait_light_cutout.png'
+                      }
+                      alt={profile.name}
+                      className="w-full h-auto max-h-[340px] xs:max-h-[390px] sm:max-h-[460px] object-cover object-top select-none transition-transform duration-500 hover:scale-[1.02]"
+                    />
+                    {/* Subtle Bottom Ambient Fade for Perfect Integration */}
+                    <div
+                      className={`absolute inset-x-0 bottom-0 h-12 sm:h-16 pointer-events-none bg-gradient-to-t ${
+                        isDark ? 'from-[#0D1018]/90 to-transparent' : 'from-white/70 to-transparent'
+                      }`}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -3057,7 +3061,7 @@ export function App() {
                       value={contactForm.name}
                       onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })}
                       placeholder="Your name"
-                      className={`w-full rounded-xl border px-3.5 py-2.5 text-sm focus:outline-none ${ui.input}`}
+                      className={`w-full rounded-xl border px-3.5 py-2.5 text-base sm:text-sm focus:outline-none ${ui.input}`}
                     />
                   </div>
                   <div className="space-y-1.5">
@@ -3070,7 +3074,7 @@ export function App() {
                       value={contactForm.email}
                       onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
                       placeholder="you@example.com"
-                      className={`w-full rounded-xl border px-3.5 py-2.5 text-sm focus:outline-none ${ui.input}`}
+                      className={`w-full rounded-xl border px-3.5 py-2.5 text-base sm:text-sm focus:outline-none ${ui.input}`}
                     />
                   </div>
                 </div>
@@ -3080,7 +3084,7 @@ export function App() {
                   <select
                     value={contactForm.subject}
                     onChange={(e) => setContactForm({ ...contactForm, subject: e.target.value })}
-                    className={`w-full rounded-xl border px-3.5 py-2.5 text-sm focus:outline-none ${ui.input}`}
+                    className={`w-full rounded-xl border px-3.5 py-2.5 text-base sm:text-sm focus:outline-none ${ui.input}`}
                   >
                     <option value="Full-Stack Opportunity">Full-Stack IT Opportunity</option>
                     <option value="Software Engineer Role">Full-Time Software Engineer Role</option>
@@ -3099,7 +3103,7 @@ export function App() {
                     value={contactForm.message}
                     onChange={(e) => setContactForm({ ...contactForm, message: e.target.value })}
                     placeholder="Tell me about your role or project timeline..."
-                    className={`w-full rounded-xl border px-3.5 py-2.5 text-sm focus:outline-none ${ui.input}`}
+                    className={`w-full rounded-xl border px-3.5 py-2.5 text-base sm:text-sm focus:outline-none ${ui.input}`}
                   />
                 </div>
 
@@ -3434,7 +3438,7 @@ export function App() {
                     setAdminLoginError('');
                   }}
                   placeholder="admin"
-                  className={`w-full rounded-xl border px-3.5 py-2.5 text-sm focus:outline-none ${ui.input}`}
+                  className={`w-full rounded-xl border px-3.5 py-2.5 text-base sm:text-sm focus:outline-none ${ui.input}`}
                 />
               </div>
 
@@ -3452,7 +3456,7 @@ export function App() {
                     setAdminLoginError('');
                   }}
                   placeholder="••••"
-                  className={`w-full rounded-xl border px-3.5 py-2.5 text-sm focus:outline-none ${ui.input}`}
+                  className={`w-full rounded-xl border px-3.5 py-2.5 text-base sm:text-sm focus:outline-none ${ui.input}`}
                 />
               </div>
 
