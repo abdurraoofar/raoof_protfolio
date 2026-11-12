@@ -313,6 +313,28 @@ const INITIAL_PROJECTS: ProjectItem[] = [
   }
 ];
 
+// Default Initial Profile State
+const INITIAL_PROFILE = {
+  name: 'Abdur Raoof A R',
+  role: 'Full-Stack Developer',
+  statusBadge: 'Available for Opportunities',
+  heroSubtitle: 'I build modern web applications, practical digital solutions and AI-powered experiences.',
+  aboutParagraph1:
+    "Hey! I'm Abdur Raoof A R. I completed my B.Tech in Information Technology at B. S. Abdur Rahman Crescent Institute of Science and Technology in Chennai.",
+  aboutParagraph2:
+    'I love building full-stack web applications that look clean, feel responsive, and work reliably. On the frontend, I build with React.js, TypeScript, and Tailwind CSS. On the backend, I create modular REST APIs with Node.js and Express.js, and manage data with PostgreSQL, MongoDB, MySQL, and Prisma ORM.',
+  educationShort: 'B.Tech IT',
+  institutionShort: 'B. S. Abdur Rahman Crescent Institute',
+  location: 'Chennai, India',
+  locationFull: 'Chennai, Tamil Nadu',
+  availabilityLine: 'Chennai, India · Open to full-time roles & IT opportunities',
+  email: 'raoofwebdev@gmail.com',
+  githubUrl: 'https://github.com/abdurraoofar',
+  linkedinUrl: 'https://www.linkedin.com/in/abdur-raoof-2559562b9',
+  avatarUrl: '/profile_photo.jpg',
+  aboutImageUrl: '/profile_photo.jpg'
+};
+
 const INITIAL_SKILLS: SkillItem[] = [
   { id: 'sk-1', name: 'React.js', category: 'Frontend', detail: 'Component architecture, Hooks, state management, SPA', code: 'FE-01' },
   { id: 'sk-2', name: 'TypeScript', category: 'Frontend', detail: 'Strict static typing, interfaces, type inference', code: 'FE-02' },
@@ -734,26 +756,16 @@ export function App() {
       : 'bg-white hover:bg-gray-50 text-gray-900 border border-gray-300 shadow-2xs'
   };
 
-  // Portfolio Content State
-  const [profile, setProfile] = useState({
-    name: 'Abdur Raoof A R',
-    role: 'Full-Stack Developer',
-    statusBadge: 'Available for Opportunities',
-    heroSubtitle: 'I build modern web applications, practical digital solutions and AI-powered experiences.',
-    aboutParagraph1:
-      "Hey! I'm Abdur Raoof A R. I completed my B.Tech in Information Technology at B. S. Abdur Rahman Crescent Institute of Science and Technology in Chennai.",
-    aboutParagraph2:
-      'I love building full-stack web applications that look clean, feel responsive, and work reliably. On the frontend, I build with React.js, TypeScript, and Tailwind CSS. On the backend, I create modular REST APIs with Node.js and Express.js, and manage data with PostgreSQL, MongoDB, MySQL, and Prisma ORM.',
-    educationShort: 'B.Tech IT',
-    institutionShort: 'B. S. Abdur Rahman Crescent Institute',
-    location: 'Chennai, India',
-    locationFull: 'Chennai, Tamil Nadu',
-    availabilityLine: 'Chennai, India · Open to full-time roles & IT opportunities',
-    email: 'raoofwebdev@gmail.com',
-    githubUrl: 'https://github.com/abdurraoofar',
-    linkedinUrl: 'https://www.linkedin.com/in/abdur-raoof-2559562b9',
-    avatarUrl: '/portrait_light_cutout.png',
-    aboutImageUrl: '/portrait_light_cutout.png'
+  // Portfolio Content State (Cached for instant 0ms load with fresh DB synchronization)
+  const [profile, setProfile] = useState(() => {
+    try {
+      const cached = localStorage.getItem('portfolio_cached_profile');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        return { ...INITIAL_PROFILE, ...parsed };
+      }
+    } catch {}
+    return INITIAL_PROFILE;
   });
 
   const [adminAccountForm, setAdminAccountForm] = useState({
@@ -957,22 +969,28 @@ export function App() {
         } = json.data;
 
         if (dbProfile) {
-          setProfile((prev) => ({
-            ...prev,
-            name: dbProfile.fullName || prev.name,
-            role: dbProfile.headline || prev.role,
-            heroSubtitle: dbProfile.heroSubheading || prev.heroSubtitle,
-            aboutParagraph1: dbProfile.aboutParagraph1 || prev.aboutParagraph1,
-            aboutParagraph2: dbProfile.aboutParagraph2 || prev.aboutParagraph2,
-            location: dbProfile.location || prev.location,
-            locationFull: dbProfile.locationFull || prev.locationFull,
-            email: dbProfile.email || prev.email,
-            statusBadge: dbProfile.statusBadge || prev.statusBadge,
-            educationShort: dbProfile.educationShort || prev.educationShort,
-            institutionShort: dbProfile.institutionShort || prev.institutionShort,
-            avatarUrl: dbProfile.avatarUrl || prev.avatarUrl,
-            aboutImageUrl: dbProfile.aboutImageUrl || dbProfile.avatarUrl || prev.aboutImageUrl
-          }));
+          setProfile((prev) => {
+            const updated = {
+              ...prev,
+              name: dbProfile.fullName || prev.name,
+              role: dbProfile.headline || prev.role,
+              heroSubtitle: dbProfile.heroSubheading || prev.heroSubtitle,
+              aboutParagraph1: dbProfile.aboutParagraph1 || prev.aboutParagraph1,
+              aboutParagraph2: dbProfile.aboutParagraph2 || prev.aboutParagraph2,
+              location: dbProfile.location || prev.location,
+              locationFull: dbProfile.locationFull || prev.locationFull,
+              email: dbProfile.email || prev.email,
+              statusBadge: dbProfile.statusBadge || prev.statusBadge,
+              educationShort: dbProfile.educationShort || prev.educationShort,
+              institutionShort: dbProfile.institutionShort || prev.institutionShort,
+              avatarUrl: dbProfile.avatarUrl || prev.avatarUrl,
+              aboutImageUrl: dbProfile.aboutImageUrl || dbProfile.avatarUrl || prev.aboutImageUrl
+            };
+            try {
+              localStorage.setItem('portfolio_cached_profile', JSON.stringify(updated));
+            } catch {}
+            return updated;
+          });
         }
 
         if (Array.isArray(dbProjects) && dbProjects.length > 0) {
@@ -1660,6 +1678,10 @@ export function App() {
           });
         }
 
+        try {
+          localStorage.setItem('portfolio_cached_profile', JSON.stringify(profile));
+        } catch {}
+
         fetchPortfolioData();
         showToast('Saved profile and social links to database');
       } else {
@@ -1716,10 +1738,22 @@ export function App() {
       showToast('Processing photo from device...');
       const compressed = await compressCertificateImage(file);
       if (target === 'about') {
-        setProfile((prev) => ({ ...prev, aboutImageUrl: compressed }));
+        setProfile((prev) => {
+          const next = { ...prev, aboutImageUrl: compressed };
+          try {
+            localStorage.setItem('portfolio_cached_profile', JSON.stringify(next));
+          } catch {}
+          return next;
+        });
         showToast('About photo updated! Click "Save Profile Changes" to save.');
       } else {
-        setProfile((prev) => ({ ...prev, avatarUrl: compressed }));
+        setProfile((prev) => {
+          const next = { ...prev, avatarUrl: compressed };
+          try {
+            localStorage.setItem('portfolio_cached_profile', JSON.stringify(next));
+          } catch {}
+          return next;
+        });
         showToast('Hero photo updated! Click "Save Profile Changes" to save.');
       }
     } catch (err) {
@@ -2356,13 +2390,7 @@ export function App() {
                     }`}
                   >
                     <img
-                      src={
-                        profile.avatarUrl
-                          ? profile.avatarUrl
-                          : isDark
-                          ? '/portrait_cutout.png'
-                          : '/portrait_light_cutout.png'
-                      }
+                      src={profile.avatarUrl || '/profile_photo.jpg'}
                       alt={profile.name}
                       className="w-full h-auto max-h-[340px] xs:max-h-[390px] sm:max-h-[460px] object-cover object-top select-none transition-transform duration-500 hover:scale-[1.02]"
                     />
@@ -2982,7 +3010,7 @@ export function App() {
             <div className="lg:col-span-6 grid grid-cols-1 sm:grid-cols-12 gap-4 items-center">
               <div className={`sm:col-span-7 rounded-2xl overflow-hidden border shadow-sm ${ui.card}`}>
                 <img
-                  src={profile.aboutImageUrl || profile.avatarUrl || (isDark ? '/portrait_cutout.png' : '/portrait_light_cutout.png')}
+                  src={profile.aboutImageUrl || profile.avatarUrl || '/profile_photo.jpg'}
                   alt={profile.name}
                   className="w-full h-64 sm:h-72 object-cover object-top select-none transition-transform duration-300 hover:scale-[1.02]"
                 />
@@ -3931,7 +3959,7 @@ export function App() {
                 </button>
                 <div className={`flex items-center gap-2.5 pl-3 border-l ${ui.divider}`}>
                   <img
-                    src="/portrait_light_cutout.png"
+                    src={profile.avatarUrl || '/profile_photo.jpg'}
                     alt="Admin Avatar"
                     className="w-8 h-8 rounded-full object-cover bg-blue-500/10 border border-gray-400/20"
                   />
@@ -4346,7 +4374,13 @@ export function App() {
                           <button
                             type="button"
                             onClick={() => {
-                              setProfile((prev) => ({ ...prev, aboutImageUrl: '/portrait_light_cutout.png' }));
+                              setProfile((prev) => {
+                                const next = { ...prev, aboutImageUrl: '/profile_photo.jpg' };
+                                try {
+                                  localStorage.setItem('portfolio_cached_profile', JSON.stringify(next));
+                                } catch {}
+                                return next;
+                              });
                               showToast('Reset About photo to default');
                             }}
                             className="text-[11px] text-[#3B82F6] hover:underline"
@@ -4414,7 +4448,13 @@ export function App() {
                           <button
                             type="button"
                             onClick={() => {
-                              setProfile((prev) => ({ ...prev, avatarUrl: '/portrait_light_cutout.png' }));
+                              setProfile((prev) => {
+                                const next = { ...prev, avatarUrl: '/profile_photo.jpg' };
+                                try {
+                                  localStorage.setItem('portfolio_cached_profile', JSON.stringify(next));
+                                } catch {}
+                                return next;
+                              });
                               showToast('Reset Hero photo to default');
                             }}
                             className="text-[11px] text-[#3B82F6] hover:underline"
