@@ -135,6 +135,15 @@ export const certificationSchema = z.object({
   })
 });
 
+export const updateAdminAccountSchema = z.object({
+  body: z.object({
+    username: z.string().min(2).optional(),
+    email: z.string().email().optional(),
+    password: z.string().min(4, 'Password must be at least 4 characters').optional(),
+    name: z.string().optional()
+  })
+});
+
 // ---------------------------------------------
 // Authentication Controllers
 // ---------------------------------------------
@@ -222,6 +231,46 @@ export const postAdminLogin = asyncHandler(async (req: Request, res: Response) =
       }
     },
     message: 'Authentication successful'
+  });
+});
+
+export const updateAdminAccount = asyncHandler(async (req: Request, res: Response) => {
+  const adminId = (req as any).admin?.adminId;
+  const { username, email, password, name } = req.body;
+
+  let admin = null;
+  if (adminId) {
+    admin = await prisma.admin.findUnique({ where: { id: adminId } });
+  }
+  if (!admin) {
+    admin = await prisma.admin.findFirst();
+  }
+  if (!admin) {
+    throw AppError.notFound('Admin account not found');
+  }
+
+  const updateData: any = {};
+  if (username) updateData.username = username;
+  if (email) updateData.email = email;
+  if (name) updateData.name = name;
+  if (password) {
+    updateData.passwordHash = await bcrypt.hash(password, 10);
+  }
+
+  const updated = await prisma.admin.update({
+    where: { id: admin.id },
+    data: updateData
+  });
+
+  res.status(200).json({
+    success: true,
+    message: 'Admin account credentials updated successfully',
+    data: {
+      id: updated.id,
+      username: updated.username,
+      email: updated.email,
+      name: updated.name
+    }
   });
 });
 

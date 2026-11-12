@@ -42,7 +42,9 @@ import {
   createAdminCertification,
   updateAdminCertification,
   deleteAdminCertification,
-  certificationSchema
+  certificationSchema,
+  updateAdminAccount,
+  updateAdminAccountSchema
 } from '../controllers/admin.controller';
 import { validateRequest } from '../middlewares/validate';
 import { authenticateAdmin } from '../middlewares/auth';
@@ -55,6 +57,9 @@ router.post('/login', validateRequest(loginSchema), postAdminLogin);
 
 // Protected routes
 router.use(authenticateAdmin);
+
+// Admin Account Settings
+router.put('/account', validateRequest(updateAdminAccountSchema), updateAdminAccount);
 
 // Projects
 router.get('/projects', getAdminProjects);

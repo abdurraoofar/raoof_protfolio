@@ -560,7 +560,15 @@ export function App() {
     availabilityLine: 'Chennai, India · Open to full-time roles & IT opportunities',
     email: 'raoofwebdev@gmail.com',
     githubUrl: 'https://github.com/abdurraoofar',
-    linkedinUrl: 'https://www.linkedin.com/in/abdur-raoof-2559562b9'
+    linkedinUrl: 'https://www.linkedin.com/in/abdur-raoof-2559562b9',
+    avatarUrl: '/portrait_light_cutout.png',
+    aboutImageUrl: '/portrait_light_cutout.png'
+  });
+
+  const [adminAccountForm, setAdminAccountForm] = useState({
+    username: 'admin',
+    email: 'raoofwebdev@gmail.com',
+    password: ''
   });
 
   const [socialLinks, setSocialLinks] = useState<SocialLinkItem[]>([
@@ -736,7 +744,9 @@ export function App() {
             email: dbProfile.email || prev.email,
             statusBadge: dbProfile.statusBadge || prev.statusBadge,
             educationShort: dbProfile.educationShort || prev.educationShort,
-            institutionShort: dbProfile.institutionShort || prev.institutionShort
+            institutionShort: dbProfile.institutionShort || prev.institutionShort,
+            avatarUrl: dbProfile.avatarUrl || prev.avatarUrl,
+            aboutImageUrl: dbProfile.aboutImageUrl || dbProfile.avatarUrl || prev.aboutImageUrl
           }));
         }
 
@@ -1381,7 +1391,8 @@ export function App() {
             email: profile.email,
             statusBadge: profile.statusBadge,
             githubUrl: profile.githubUrl,
-            linkedinUrl: profile.linkedinUrl
+            linkedinUrl: profile.linkedinUrl,
+            avatarUrl: profile.avatarUrl || profile.aboutImageUrl
           })
         });
 
@@ -1432,6 +1443,42 @@ export function App() {
     } catch (err) {
       console.warn('API error saving profile:', err);
       showToast('Network error saving to backend');
+    }
+  };
+
+  const handleSaveAdminAccount = async () => {
+    if (!adminAccountForm.username && !adminAccountForm.password && !adminAccountForm.email) {
+      showToast('Please enter a username, email, or new password.');
+      return;
+    }
+    try {
+      if (adminToken) {
+        const payload: any = {};
+        if (adminAccountForm.username) payload.username = adminAccountForm.username;
+        if (adminAccountForm.email) payload.email = adminAccountForm.email;
+        if (adminAccountForm.password) payload.password = adminAccountForm.password;
+
+        const res = await fetch(`${API_BASE}/admin/account`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${adminToken}`
+          },
+          body: JSON.stringify(payload)
+        });
+        const json = await res.json();
+        if (res.ok && json.success) {
+          showToast('Admin credentials updated in PostgreSQL!');
+          setAdminAccountForm((prev) => ({ ...prev, password: '' }));
+        } else {
+          showToast(`Error: ${json.error?.message || json.message || 'Failed to update credentials'}`);
+        }
+      } else {
+        showToast('Please log in with admin token first');
+      }
+    } catch (err) {
+      console.warn('Error updating admin account:', err);
+      showToast('Network error updating admin credentials');
     }
   };
 
@@ -2064,7 +2111,9 @@ export function App() {
                   >
                     <img
                       src={
-                        isDark
+                        profile.avatarUrl
+                          ? profile.avatarUrl
+                          : isDark
                           ? '/portrait_cutout.png'
                           : '/portrait_light_cutout.png'
                       }
@@ -2702,11 +2751,11 @@ export function App() {
             </div>
 
             <div className="lg:col-span-6 grid grid-cols-1 sm:grid-cols-12 gap-4 items-center">
-              <div className={`sm:col-span-7 rounded-2xl overflow-hidden border ${ui.card}`}>
+              <div className={`sm:col-span-7 rounded-2xl overflow-hidden border shadow-sm ${ui.card}`}>
                 <img
-                  src="/about_workspace.png"
-                  alt="Developer Workspace"
-                  className="w-full h-64 sm:h-72 object-cover"
+                  src={profile.aboutImageUrl || profile.avatarUrl || (isDark ? '/portrait_cutout.png' : '/portrait_light_cutout.png')}
+                  alt={profile.name}
+                  className="w-full h-64 sm:h-72 object-cover object-top select-none transition-transform duration-300 hover:scale-[1.02]"
                 />
               </div>
 
@@ -3379,18 +3428,6 @@ export function App() {
                   <Download className="w-3 h-3 text-[#3B82F6]" />
                   <span>Resume</span>
                 </button>
-                <span className={ui.muted}>&middot;</span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setCurrentPage('admin');
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                  className={`hover:underline flex items-center gap-1 ${ui.muted}`}
-                >
-                  <Lock className="w-3 h-3" />
-                  <span>Admin Access</span>
-                </button>
               </div>
             </div>
           </div>
@@ -3927,8 +3964,9 @@ export function App() {
               )}
 
               {adminSection === 'profile' && (
-                <div className={`rounded-2xl border p-6 space-y-4 max-w-2xl ${ui.card}`}>
-                  <h2 className={`text-xl font-bold ${ui.heading}`}>Edit Public Profile &amp; Bio</h2>
+                <div className="space-y-6 max-w-2xl">
+                  <div className={`rounded-2xl border p-6 space-y-4 ${ui.card}`}>
+                    <h2 className={`text-xl font-bold ${ui.heading}`}>Edit Public Profile &amp; Bio</h2>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className={`block text-xs font-semibold mb-1 ${ui.heading}`}>Full Name</label>
@@ -4011,6 +4049,69 @@ export function App() {
                     </div>
                   </div>
 
+                  {/* Public Site Imagery & Photos */}
+                  <div className="pt-3 border-t border-gray-200 dark:border-gray-800 space-y-4">
+                    <h3 className={`text-sm font-bold ${ui.heading}`}>Public Profile Photos</h3>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* About Image */}
+                      <div className="space-y-2">
+                        <label className={`block text-xs font-semibold ${ui.heading}`}>About Me Section Photo URL</label>
+                        <input
+                          type="text"
+                          value={profile.aboutImageUrl || ''}
+                          onChange={(e) => setProfile({ ...profile, aboutImageUrl: e.target.value })}
+                          placeholder="/portrait_light_cutout.png"
+                          className={`w-full rounded-xl border px-3 py-2 text-sm ${ui.input}`}
+                        />
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setProfile({ ...profile, aboutImageUrl: '/portrait_light_cutout.png' })}
+                            className="text-[11px] px-2 py-1 rounded bg-[#2563EB]/10 text-[#3B82F6] hover:underline"
+                          >
+                            Use Light Portrait
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setProfile({ ...profile, aboutImageUrl: '/portrait_cutout.png' })}
+                            className="text-[11px] px-2 py-1 rounded bg-gray-500/10 text-gray-400 hover:underline"
+                          >
+                            Use Dark Cutout
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Hero Image */}
+                      <div className="space-y-2">
+                        <label className={`block text-xs font-semibold ${ui.heading}`}>Hero Portrait Photo URL</label>
+                        <input
+                          type="text"
+                          value={profile.avatarUrl || ''}
+                          onChange={(e) => setProfile({ ...profile, avatarUrl: e.target.value })}
+                          placeholder="/portrait_light_cutout.png"
+                          className={`w-full rounded-xl border px-3 py-2 text-sm ${ui.input}`}
+                        />
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setProfile({ ...profile, avatarUrl: '/portrait_light_cutout.png' })}
+                            className="text-[11px] px-2 py-1 rounded bg-[#2563EB]/10 text-[#3B82F6] hover:underline"
+                          >
+                            Use Light Portrait
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setProfile({ ...profile, avatarUrl: '/portrait_cutout.png' })}
+                            className="text-[11px] px-2 py-1 rounded bg-gray-500/10 text-gray-400 hover:underline"
+                          >
+                            Use Dark Cutout
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
                   <button
                     type="button"
                     onClick={handleSaveProfile}
@@ -4019,7 +4120,65 @@ export function App() {
                     Save Profile Changes
                   </button>
                 </div>
-              )}
+
+                {/* Admin Panel Credentials & Security */}
+                <div className={`rounded-2xl border p-6 space-y-4 max-w-2xl mt-6 ${ui.card}`}>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className={`text-xl font-bold ${ui.heading}`}>Admin Security &amp; Credentials</h2>
+                      <p className={`text-xs mt-0.5 ${ui.muted}`}>
+                        Change your administrator login username, email, or password to secure your admin console.
+                      </p>
+                    </div>
+                    <div className="w-9 h-9 rounded-xl bg-[#2563EB]/15 text-[#3B82F6] flex items-center justify-center">
+                      <Lock className="w-4 h-4" />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className={`block text-xs font-semibold mb-1 ${ui.heading}`}>Admin Username</label>
+                      <input
+                        type="text"
+                        value={adminAccountForm.username}
+                        onChange={(e) => setAdminAccountForm({ ...adminAccountForm, username: e.target.value })}
+                        placeholder="admin"
+                        className={`w-full rounded-xl border px-3 py-2 text-sm ${ui.input}`}
+                      />
+                    </div>
+                    <div>
+                      <label className={`block text-xs font-semibold mb-1 ${ui.heading}`}>Admin Email</label>
+                      <input
+                        type="email"
+                        value={adminAccountForm.email}
+                        onChange={(e) => setAdminAccountForm({ ...adminAccountForm, email: e.target.value })}
+                        placeholder="admin@portfolio.local"
+                        className={`w-full rounded-xl border px-3 py-2 text-sm ${ui.input}`}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className={`block text-xs font-semibold mb-1 ${ui.heading}`}>New Admin Password</label>
+                    <input
+                      type="password"
+                      value={adminAccountForm.password}
+                      onChange={(e) => setAdminAccountForm({ ...adminAccountForm, password: e.target.value })}
+                      placeholder="Leave blank to keep existing password, or type new password..."
+                      className={`w-full rounded-xl border px-3 py-2 text-sm ${ui.input}`}
+                    />
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleSaveAdminAccount}
+                    className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold transition"
+                  >
+                    Update Admin Credentials
+                  </button>
+                </div>
+              </div>
+            )}
 
               {adminSection === 'social' && (
                 <div className={`rounded-2xl border p-6 space-y-6 ${ui.card}`}>
