@@ -37,6 +37,7 @@ import {
   updateAdminSocialLink,
   deleteAdminSocialLink,
   socialLinkSchema,
+  socialLinkUpdateSchema,
   getAdminCertifications,
   createAdminCertification,
   updateAdminCertification,
@@ -96,7 +97,7 @@ router.patch('/resume/:id/activate', activateAdminResume);
 // Social Links
 router.get('/social-links', getAdminSocialLinks);
 router.post('/social-links', validateRequest(socialLinkSchema), createAdminSocialLink);
-router.put('/social-links/:id', validateRequest(socialLinkSchema), updateAdminSocialLink);
+router.put('/social-links/:id', validateRequest(socialLinkUpdateSchema), updateAdminSocialLink);
 router.delete('/social-links/:id', deleteAdminSocialLink);
 
 // Certifications

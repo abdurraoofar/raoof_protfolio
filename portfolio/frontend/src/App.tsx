@@ -50,7 +50,7 @@ import {
 } from 'lucide-react';
 
 type EnvMode = 'development' | 'production';
-type PageRoute = 'home' | 'projects' | 'about' | 'certifications' | 'contact' | 'admin';
+type PageRoute = 'home' | 'about' | 'experience' | 'projects' | 'certifications' | 'contact' | 'admin';
 type AdminSection =
   | 'dashboard'
   | 'profile'
@@ -445,6 +445,7 @@ const getRouteFromUrl = (): PageRoute => {
     return 'admin';
   }
   if (path === '/about' || hash === '#about' || hash === '#/about') return 'about';
+  if (path === '/experience' || hash === '#experience' || hash === '#/experience') return 'experience';
   if (path === '/projects' || hash === '#projects' || hash === '#/projects') return 'projects';
   if (path === '/certifications' || hash === '#certifications' || hash === '#/certifications') return 'certifications';
   if (path === '/contact' || hash === '#contact' || hash === '#/contact') return 'contact';
@@ -1348,8 +1349,20 @@ export function App() {
   };
 
   const handleSaveProfile = async () => {
+    // 1. Immediately sync social links in local state
+    setSocialLinks((prev) =>
+      prev.map((s) => {
+        const p = s.platform.toLowerCase();
+        if (p.includes('git') && profile.githubUrl) return { ...s, url: profile.githubUrl };
+        if (p.includes('link') && profile.linkedinUrl) return { ...s, url: profile.linkedinUrl };
+        if (p.includes('mail') && profile.email) return { ...s, url: `mailto:${profile.email}` };
+        return s;
+      })
+    );
+
     try {
       if (adminToken) {
+        // 2. Save profile and pass GitHub & LinkedIn URLs for automatic backend DB synchronization
         await fetch(`${API_BASE}/admin/profile`, {
           method: 'PUT',
           headers: {
@@ -1365,17 +1378,19 @@ export function App() {
             location: profile.location,
             locationFull: profile.locationFull,
             email: profile.email,
-            statusBadge: profile.statusBadge
+            statusBadge: profile.statusBadge,
+            githubUrl: profile.githubUrl,
+            linkedinUrl: profile.linkedinUrl
           })
         });
 
-        // Sync GitHub & LinkedIn social links
+        // 3. Also directly update social links endpoints to guarantee full DB persistence
         const gh = socialLinks.find((s) => s.platform.toLowerCase().includes('git'));
         if (gh && profile.githubUrl) {
           await fetch(`${API_BASE}/admin/social-links/${gh.id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
-            body: JSON.stringify({ platform: gh.platform, url: profile.githubUrl })
+            body: JSON.stringify({ platform: 'GitHub', url: profile.githubUrl })
           });
         }
         const li = socialLinks.find((s) => s.platform.toLowerCase().includes('link'));
@@ -1383,14 +1398,22 @@ export function App() {
           await fetch(`${API_BASE}/admin/social-links/${li.id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
-            body: JSON.stringify({ platform: li.platform, url: profile.linkedinUrl })
+            body: JSON.stringify({ platform: 'LinkedIn', url: profile.linkedinUrl })
+          });
+        }
+        const em = socialLinks.find((s) => s.platform.toLowerCase().includes('mail'));
+        if (em && profile.email) {
+          await fetch(`${API_BASE}/admin/social-links/${em.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+            body: JSON.stringify({ platform: 'Email', url: `mailto:${profile.email}` })
           });
         }
       }
     } catch (err) {
       console.warn('API error saving profile:', err);
     }
-    showToast('Saved profile and links to PostgreSQL');
+    showToast('Saved profile and social links');
   };
 
   const handleAddSocialLink = async (e: React.FormEvent) => {
@@ -1448,8 +1471,20 @@ export function App() {
   const handleUpdateSocialLink = async (id: string, updatedUrl: string) => {
     const item = socialLinks.find((s) => s.id === id);
     if (!item) return;
-    setSocialLinks(socialLinks.map((s) => (s.id === id ? { ...s, url: updatedUrl } : s)));
+    setSocialLinks((prev) => prev.map((s) => (s.id === id ? { ...s, url: updatedUrl } : s)));
     setEditingSocialId(null);
+
+    // Sync back into profile state immediately
+    const p = item.platform.toLowerCase();
+    if (p.includes('git')) {
+      setProfile((prev) => ({ ...prev, githubUrl: updatedUrl }));
+    } else if (p.includes('link')) {
+      setProfile((prev) => ({ ...prev, linkedinUrl: updatedUrl }));
+    } else if (p.includes('mail')) {
+      const cleanEmail = updatedUrl.replace(/^mailto:/i, '').trim();
+      setProfile((prev) => ({ ...prev, email: cleanEmail }));
+    }
+
     try {
       if (adminToken) {
         await fetch(`${API_BASE}/admin/social-links/${id}`, {
@@ -1721,6 +1756,7 @@ export function App() {
               {[
                 { id: 'home', label: 'Home' },
                 { id: 'about', label: 'About' },
+                { id: 'experience', label: 'Experience' },
                 { id: 'projects', label: 'Projects' },
                 { id: 'certifications', label: 'Certifications' },
                 { id: 'contact', label: 'Contact' }
@@ -1830,7 +1866,7 @@ export function App() {
               }`}
             >
               <div className="space-y-1">
-                {(['home', 'about', 'projects', 'certifications', 'contact'] as PageRoute[]).map((route) => (
+                {(['home', 'about', 'experience', 'projects', 'certifications', 'contact'] as PageRoute[]).map((route) => (
                   <button
                     key={route}
                     type="button"
@@ -2367,7 +2403,89 @@ export function App() {
           </section>
 
           {/* =====================================================================
-              04 / CAREER & OPPORTUNITY CONNECT CTA BANNER
+              04 / EXPERIENCE & WORK HISTORY
+             ===================================================================== */}
+          <section id="experience-section" className={`py-14 border-t space-y-8 ${ui.divider}`}>
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+              <div>
+                <div className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-md bg-[#2563EB]/10 text-[#3B82F6] mb-2">
+                  <Briefcase className="w-3.5 h-3.5" />
+                  <span>Work History</span>
+                </div>
+                <h2 className={`text-2xl sm:text-3xl font-bold tracking-tight ${ui.heading}`}>
+                  Experience &amp; Work History
+                </h2>
+                <p className={`text-xs sm:text-sm mt-1 max-w-xl ${ui.body}`}>
+                  Hands-on engineering roles, software development internships, and measurable product contributions.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setCurrentPage('experience')}
+                className={`inline-flex items-center gap-1.5 text-xs font-semibold hover:underline self-start sm:self-auto ${ui.accentText}`}
+              >
+                <span>View Full Career Timeline</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {experiences.map((exp) => (
+                <div
+                  key={exp.id}
+                  className={`rounded-2xl border p-6 flex flex-col justify-between space-y-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${ui.card} ${ui.cardHover}`}
+                >
+                  <div className="space-y-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <span className={`px-2.5 py-1 rounded-full text-[11px] font-mono font-medium ${
+                        isDark ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 'bg-blue-50 text-blue-700 border border-blue-200'
+                      }`}>
+                        {exp.period}
+                      </span>
+                      <span className={`text-[11px] font-mono ${ui.muted}`}>
+                        {exp.location}
+                      </span>
+                    </div>
+
+                    <div>
+                      <h3 className={`font-bold text-base sm:text-lg ${ui.heading}`}>
+                        {exp.role}
+                      </h3>
+                      <div className="flex items-center gap-2 pt-0.5">
+                        <span className={`font-semibold text-xs sm:text-sm ${ui.accentText}`}>
+                          {exp.company}
+                        </span>
+                      </div>
+                    </div>
+
+                    <ul className={`space-y-2 text-xs sm:text-[13px] leading-relaxed list-disc list-inside ${ui.body}`}>
+                      {exp.highlights.map((h, i) => (
+                        <li key={i} className="pl-1">
+                          <span className="-ml-1">{h}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className={`pt-3 border-t flex items-center justify-between text-xs font-mono ${ui.divider}`}>
+                    <span className={ui.muted}>Software Engineering</span>
+                    <button
+                      type="button"
+                      onClick={() => setCurrentPage('experience')}
+                      className={`inline-flex items-center gap-1 hover:underline ${ui.accentText}`}
+                    >
+                      <span>Full Details</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* =====================================================================
+              05 / CAREER & OPPORTUNITY CONNECT CTA BANNER
              ===================================================================== */}
           <section className={`py-12 border-t ${ui.divider}`}>
             <div
@@ -2677,6 +2795,164 @@ export function App() {
       )}
 
       {/* =====================================================================
+          EXPERIENCE & CAREER PAGE (/experience)
+         ===================================================================== */}
+      {currentPage === 'experience' && (
+        <main className="max-w-6xl mx-auto px-4 sm:px-6 py-12 space-y-12">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6">
+            <div className="space-y-2">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-[#2563EB]/10 text-[#3B82F6]">
+                <Briefcase className="w-3.5 h-3.5" />
+                <span>Career History &amp; Education</span>
+              </div>
+              <h1 className={`text-3xl sm:text-4xl font-bold tracking-tight ${ui.heading}`}>
+                Experience &amp; Education
+              </h1>
+              <p className={`text-sm sm:text-base max-w-2xl ${ui.body}`}>
+                A comprehensive record of my software engineering internships, technical achievements, real-world impact, and academic training in Information Technology.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setShowResumeModal(true)}
+                className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition ${ui.secondaryBtn}`}
+              >
+                <Download className="w-4 h-4 text-[#3B82F6]" />
+                <span>Resume PDF</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setCurrentPage('contact')}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs sm:text-sm font-semibold shadow-sm transition"
+              >
+                <Mail className="w-4 h-4" />
+                <span>Contact</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Grid Layout: Experience (Col 7) and Education (Col 5) */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            {/* Work Experience */}
+            <div className="lg:col-span-7 space-y-6">
+              <div className="flex items-center gap-2 pb-2 border-b border-inherit">
+                <Briefcase className="w-5 h-5 text-[#3B82F6]" />
+                <h2 className={`text-xl font-bold ${ui.heading}`}>Work Experience</h2>
+              </div>
+
+              <div className="space-y-6">
+                {experiences.map((exp) => (
+                  <div
+                    key={exp.id}
+                    className={`rounded-2xl border p-6 space-y-4 shadow-sm transition-all duration-200 hover:shadow-md ${ui.card} ${ui.cardHover}`}
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div>
+                        <h3 className={`text-lg font-bold ${ui.heading}`}>{exp.role}</h3>
+                        <p className={`text-sm font-semibold ${ui.accentText}`}>{exp.company}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className={`px-3 py-1 rounded-full text-xs font-mono font-medium ${
+                          isDark ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 'bg-blue-50 text-blue-700 border border-blue-200'
+                        }`}>
+                          {exp.period}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+                      <MapPin className="w-3.5 h-3.5" />
+                      <span>{exp.location}</span>
+                    </div>
+
+                    <div className={`pt-3 border-t ${ui.divider}`}>
+                      <h4 className={`text-xs font-mono uppercase tracking-wider font-semibold mb-2.5 ${ui.muted}`}>
+                        Key Responsibilities &amp; Impact
+                      </h4>
+                      <ul className={`space-y-2 text-xs sm:text-sm leading-relaxed list-disc list-inside ${ui.body}`}>
+                        {exp.highlights.map((h, i) => (
+                          <li key={i} className="pl-1">
+                            <span className="-ml-1">{h}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Academic Training & Education */}
+            <div className="lg:col-span-5 space-y-6">
+              <div className="flex items-center gap-2 pb-2 border-b border-inherit">
+                <GraduationCap className="w-5 h-5 text-[#3B82F6]" />
+                <h2 className={`text-xl font-bold ${ui.heading}`}>Education</h2>
+              </div>
+
+              <div className="space-y-6">
+                {educations.map((edu) => (
+                  <div
+                    key={edu.id}
+                    className={`rounded-2xl border p-6 space-y-3.5 shadow-sm transition-all duration-200 hover:shadow-md ${ui.card} ${ui.cardHover}`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <span className={`px-2.5 py-1 rounded-full text-[11px] font-mono font-medium ${
+                        isDark ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                      }`}>
+                        {edu.period}
+                      </span>
+                      <span className={`text-[11px] font-mono ${ui.muted}`}>
+                        {edu.location}
+                      </span>
+                    </div>
+
+                    <div>
+                      <h3 className={`font-bold text-base sm:text-lg ${ui.heading}`}>
+                        {edu.degree}
+                      </h3>
+                      <p className={`text-xs sm:text-sm font-semibold mt-0.5 ${ui.accentText}`}>
+                        {edu.institution}
+                      </p>
+                    </div>
+
+                    {edu.details && (
+                      <p className={`text-xs sm:text-[13px] leading-relaxed pt-2 border-t ${ui.divider} ${ui.body}`}>
+                        {edu.details}
+                      </p>
+                    )}
+                  </div>
+                ))}
+
+                {/* Quick Link to Certifications */}
+                <div className={`p-6 rounded-2xl border space-y-3 ${ui.card}`}>
+                  <div className="flex items-center gap-2">
+                    <Award className="w-5 h-5 text-[#3B82F6]" />
+                    <h3 className={`font-bold text-sm sm:text-base ${ui.heading}`}>
+                      Verified Certifications
+                    </h3>
+                  </div>
+                  <p className={`text-xs leading-relaxed ${ui.muted}`}>
+                    I also hold industry-recognized credentials in full-stack engineering, web technologies, and database design.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage('certifications')}
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#2563EB] dark:text-[#60A5FA] hover:underline"
+                  >
+                    <span>View all {certifications.length} certifications</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
+      )}
+
+      {/* =====================================================================
           4. CONTACT PAGE
          ===================================================================== */}
       {currentPage === 'contact' && (
@@ -2937,6 +3213,149 @@ export function App() {
             ))}
           </div>
         </main>
+      )}
+
+      {/* =====================================================================
+          GLOBAL PROFESSIONAL FOOTER
+         ===================================================================== */}
+      {currentPage !== 'admin' && (
+        <footer className={`border-t mt-16 sm:mt-24 transition-colors ${ui.divider} ${isDark ? 'bg-[#090B10]' : 'bg-gray-50/80'}`}>
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12 space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
+              {/* Brand & Headline */}
+              <div className="md:col-span-5 space-y-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-[#2563EB] text-white font-bold text-xs flex items-center justify-center shadow-xs">
+                    AR
+                  </div>
+                  <div className="flex flex-col">
+                    <span className={`font-bold text-sm tracking-tight ${ui.heading}`}>
+                      {profile.name}
+                    </span>
+                    <span className={`text-[11px] font-mono ${ui.muted}`}>
+                      {profile.role}
+                    </span>
+                  </div>
+                </div>
+
+                <p className={`text-xs sm:text-[13px] leading-relaxed max-w-sm ${ui.body}`}>
+                  B.Tech Information Technology Graduate from B. S. Abdur Rahman Crescent Institute of Science and Technology. Passionate about modern web architecture and high-reliability full-stack applications.
+                </p>
+
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[11px] font-medium border bg-emerald-500/10 border-emerald-500/30 text-emerald-400">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span>Available for Full-Time Roles</span>
+                </div>
+              </div>
+
+              {/* Quick Navigation */}
+              <div className="md:col-span-4 space-y-3">
+                <div className={`text-xs font-mono uppercase tracking-wider font-semibold ${ui.muted}`}>
+                  Navigation
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  {[
+                    { id: 'home', label: 'Home' },
+                    { id: 'about', label: 'About' },
+                    { id: 'experience', label: 'Experience' },
+                    { id: 'projects', label: 'Projects' },
+                    { id: 'certifications', label: 'Certifications' },
+                    { id: 'contact', label: 'Contact' }
+                  ].map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => {
+                        setCurrentPage(item.id as PageRoute);
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      className={`text-left hover:underline transition ${
+                        currentPage === item.id ? 'font-semibold text-[#2563EB] dark:text-[#60A5FA]' : ui.muted
+                      }`}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Connect & Social Channels */}
+              <div className="md:col-span-3 space-y-3">
+                <div className={`text-xs font-mono uppercase tracking-wider font-semibold ${ui.muted}`}>
+                  Connect
+                </div>
+                <div className="flex items-center gap-2">
+                  {socialLinks.filter((s) => s.isVisible !== false).map((item) => {
+                    const IconComp = item.platform.toLowerCase().includes('git')
+                      ? Github
+                      : item.platform.toLowerCase().includes('link')
+                      ? Linkedin
+                      : item.platform.toLowerCase().includes('mail')
+                      ? Mail
+                      : Globe;
+                    return (
+                      <a
+                        key={item.id}
+                        href={item.url}
+                        target={item.url.startsWith('mailto:') ? '_self' : '_blank'}
+                        rel="noreferrer"
+                        aria-label={item.platform}
+                        className={`w-9 h-9 rounded-xl border flex items-center justify-center transition shadow-2xs ${
+                          isDark
+                            ? 'bg-[#141824] border-[#222736] text-gray-300 hover:text-white hover:border-[#3B82F6]'
+                            : 'bg-white border-gray-200 text-gray-700 hover:text-[#2563EB] hover:border-[#2563EB]'
+                        }`}
+                      >
+                        <IconComp className="w-4 h-4" />
+                      </a>
+                    );
+                  })}
+                </div>
+
+                <div className="pt-1">
+                  <a
+                    href={`mailto:${profile.email}`}
+                    className={`text-xs font-mono hover:underline block truncate ${ui.accentText}`}
+                  >
+                    {profile.email}
+                  </a>
+                  <span className={`text-[11px] font-mono block pt-0.5 ${ui.muted}`}>
+                    Chennai, Tamil Nadu, India
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom Bar: Copyright & Admin link */}
+            <div className={`pt-8 border-t flex flex-col sm:flex-row items-center justify-between gap-4 text-xs ${ui.divider}`}>
+              <div className={ui.muted}>
+                &copy; {new Date().getFullYear()} {profile.name}. All rights reserved.
+              </div>
+              <div className="flex items-center gap-4">
+                <button
+                  type="button"
+                  onClick={() => setShowResumeModal(true)}
+                  className={`hover:underline flex items-center gap-1 ${ui.muted}`}
+                >
+                  <Download className="w-3 h-3 text-[#3B82F6]" />
+                  <span>Resume</span>
+                </button>
+                <span className={ui.muted}>&middot;</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCurrentPage('admin');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className={`hover:underline flex items-center gap-1 ${ui.muted}`}
+                >
+                  <Lock className="w-3 h-3" />
+                  <span>Admin Access</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </footer>
       )}
 
       {/* =====================================================================

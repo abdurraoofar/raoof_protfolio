@@ -95,7 +95,9 @@ export const profileSchema = z.object({
     heroSubheading: z.string().optional(),
     avatarUrl: z.string().optional(),
     educationShort: z.string().optional(),
-    institutionShort: z.string().optional()
+    institutionShort: z.string().optional(),
+    githubUrl: z.string().optional(),
+    linkedinUrl: z.string().optional()
   })
 });
 
@@ -104,8 +106,18 @@ export const socialLinkSchema = z.object({
     platform: z.string().min(1, 'Platform is required'),
     url: z.string().min(1, 'URL is required'),
     icon: z.string().optional().nullable(),
-    isVisible: z.boolean().default(true),
-    displayOrder: z.number().int().default(0)
+    isVisible: z.boolean().optional().default(true),
+    displayOrder: z.number().int().optional().default(0)
+  })
+});
+
+export const socialLinkUpdateSchema = z.object({
+  body: z.object({
+    platform: z.string().optional(),
+    url: z.string().min(1, 'URL is required').optional(),
+    icon: z.string().optional().nullable(),
+    isVisible: z.boolean().optional(),
+    displayOrder: z.number().int().optional()
   })
 });
 
@@ -369,27 +381,81 @@ export const getAdminProfile = asyncHandler(async (_req: Request, res: Response)
 });
 
 export const updateAdminProfile = asyncHandler(async (req: Request, res: Response) => {
+  const { githubUrl, linkedinUrl, ...profileData } = req.body;
+
   let profile = await prisma.profile.findFirst();
   if (profile) {
     profile = await prisma.profile.update({
       where: { id: profile.id },
-      data: req.body
+      data: profileData
     });
   } else {
     profile = await prisma.profile.create({
       data: {
         fullName: 'Abdur Raoof A R',
-        headline: 'IT Graduate',
+        headline: 'Full-Stack Developer & Software Engineer',
         bio: 'Bio',
-        location: 'Chennai',
+        location: 'Chennai, India',
         email: 'raoofwebdev@gmail.com',
-        statusBadge: 'Active',
-        heroHeading: 'Software Engineer',
+        statusBadge: 'Available for Software Engineer Roles',
+        heroHeading: 'Full-Stack Software Engineer',
         heroSubheading: 'Full-Stack Developer',
-        ...req.body
+        ...profileData
       }
     });
   }
+
+  // Sync GitHub social link if provided
+  if (githubUrl !== undefined && githubUrl !== null) {
+    const existingGh = await prisma.socialLink.findFirst({
+      where: { platform: { contains: 'git', mode: 'insensitive' } }
+    });
+    if (existingGh) {
+      await prisma.socialLink.update({
+        where: { id: existingGh.id },
+        data: { url: githubUrl }
+      });
+    } else if (githubUrl) {
+      await prisma.socialLink.create({
+        data: { platform: 'GitHub', url: githubUrl, icon: 'Github', isVisible: true, displayOrder: 1 }
+      });
+    }
+  }
+
+  // Sync LinkedIn social link if provided
+  if (linkedinUrl !== undefined && linkedinUrl !== null) {
+    const existingLi = await prisma.socialLink.findFirst({
+      where: { platform: { contains: 'link', mode: 'insensitive' } }
+    });
+    if (existingLi) {
+      await prisma.socialLink.update({
+        where: { id: existingLi.id },
+        data: { url: linkedinUrl }
+      });
+    } else if (linkedinUrl) {
+      await prisma.socialLink.create({
+        data: { platform: 'LinkedIn', url: linkedinUrl, icon: 'Linkedin', isVisible: true, displayOrder: 2 }
+      });
+    }
+  }
+
+  // Sync Email social link if email was provided
+  if (profileData.email) {
+    const existingEmail = await prisma.socialLink.findFirst({
+      where: { platform: { contains: 'mail', mode: 'insensitive' } }
+    });
+    if (existingEmail) {
+      await prisma.socialLink.update({
+        where: { id: existingEmail.id },
+        data: { url: `mailto:${profileData.email}` }
+      });
+    } else {
+      await prisma.socialLink.create({
+        data: { platform: 'Email', url: `mailto:${profileData.email}`, icon: 'Mail', isVisible: true, displayOrder: 3 }
+      });
+    }
+  }
+
   res.status(200).json({ success: true, data: profile, message: 'Profile updated' });
 });
 
@@ -433,10 +499,52 @@ export const createAdminSocialLink = asyncHandler(async (req: Request, res: Resp
 
 export const updateAdminSocialLink = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
-  const link = await prisma.socialLink.update({
-    where: { id },
-    data: req.body
-  });
+  const { platform, url, icon, isVisible, displayOrder } = req.body;
+
+  // Find by ID or fallback by platform name (case-insensitive)
+  let existing = await prisma.socialLink.findUnique({ where: { id } }).catch(() => null);
+  if (!existing && platform) {
+    existing = await prisma.socialLink.findFirst({
+      where: { platform: { equals: platform, mode: 'insensitive' } }
+    });
+  }
+
+  let link;
+  if (existing) {
+    link = await prisma.socialLink.update({
+      where: { id: existing.id },
+      data: {
+        ...(platform ? { platform } : {}),
+        ...(url ? { url } : {}),
+        ...(icon !== undefined ? { icon } : {}),
+        ...(isVisible !== undefined ? { isVisible } : {}),
+        ...(displayOrder !== undefined ? { displayOrder } : {})
+      }
+    });
+  } else {
+    link = await prisma.socialLink.create({
+      data: {
+        platform: platform || 'Link',
+        url: url || '#',
+        icon: icon || null,
+        isVisible: isVisible ?? true,
+        displayOrder: displayOrder ?? 0
+      }
+    });
+  }
+
+  // If this was email, update profile email as well
+  if (link.platform.toLowerCase().includes('mail') && link.url.includes('@')) {
+    const cleanEmail = link.url.replace(/^mailto:/i, '').trim();
+    const profile = await prisma.profile.findFirst();
+    if (profile) {
+      await prisma.profile.update({
+        where: { id: profile.id },
+        data: { email: cleanEmail }
+      });
+    }
+  }
+
   res.status(200).json({ success: true, data: link, message: 'Social link updated' });
 });
 
