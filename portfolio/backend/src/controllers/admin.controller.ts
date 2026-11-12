@@ -199,7 +199,7 @@ export const postAdminLogin = asyncHandler(async (req: Request, res: Response) =
       role: admin.role
     },
     config.jwt.accessSecret,
-    { expiresIn: '15m' }
+    { expiresIn: '30d' }
   );
 
   await prisma.admin.update({
@@ -212,7 +212,7 @@ export const postAdminLogin = asyncHandler(async (req: Request, res: Response) =
     data: {
       accessToken,
       tokenType: 'Bearer',
-      expiresIn: '15m',
+      expiresIn: '30d',
       user: {
         id: admin.id,
         email: admin.email,

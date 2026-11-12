@@ -609,7 +609,8 @@ export function App() {
   } | null>(null);
   const [adminMobileMenuOpen, setAdminMobileMenuOpen] = useState(false);
 
-  const API_BASE = (import.meta.env?.VITE_API_BASE_URL as string) || 'http://localhost:5000/api/v1';
+  const API_BASE =
+    (import.meta.env?.VITE_API_BASE_URL as string) || 'https://raoof-protfolio.onrender.com/api/v1';
   const [adminToken, setAdminToken] = useState<string>(() => {
     try {
       return sessionStorage.getItem('portfolio_admin_token') || '';
@@ -1363,7 +1364,7 @@ export function App() {
     try {
       if (adminToken) {
         // 2. Save profile and pass GitHub & LinkedIn URLs for automatic backend DB synchronization
-        await fetch(`${API_BASE}/admin/profile`, {
+        const profRes = await fetch(`${API_BASE}/admin/profile`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -1383,6 +1384,19 @@ export function App() {
             linkedinUrl: profile.linkedinUrl
           })
         });
+
+        if (!profRes.ok) {
+          if (profRes.status === 401) {
+            showToast('Admin session expired. Please log in again.');
+            setIsAdminAuthenticated(false);
+            sessionStorage.removeItem('portfolio_admin_auth');
+            sessionStorage.removeItem('portfolio_admin_token');
+            return;
+          }
+          const errData = await profRes.json().catch(() => null);
+          showToast(`Error: ${errData?.error?.message || 'Could not save profile'}`);
+          return;
+        }
 
         // 3. Also directly update social links endpoints to guarantee full DB persistence
         const gh = socialLinks.find((s) => s.platform.toLowerCase().includes('git'));
@@ -1409,11 +1423,16 @@ export function App() {
             body: JSON.stringify({ platform: 'Email', url: `mailto:${profile.email}` })
           });
         }
+
+        fetchPortfolioData();
+        showToast('Saved profile and social links to database');
+      } else {
+        showToast('Please log into Admin to save changes to the database');
       }
     } catch (err) {
       console.warn('API error saving profile:', err);
+      showToast('Network error saving to backend');
     }
-    showToast('Saved profile and social links');
   };
 
   const handleAddSocialLink = async (e: React.FormEvent) => {
@@ -1487,16 +1506,32 @@ export function App() {
 
     try {
       if (adminToken) {
-        await fetch(`${API_BASE}/admin/social-links/${id}`, {
+        const res = await fetch(`${API_BASE}/admin/social-links/${id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
           body: JSON.stringify({ platform: item.platform, url: updatedUrl })
         });
+        if (!res.ok) {
+          if (res.status === 401) {
+            showToast('Admin session expired. Please log in again.');
+            setIsAdminAuthenticated(false);
+            sessionStorage.removeItem('portfolio_admin_auth');
+            sessionStorage.removeItem('portfolio_admin_token');
+            return;
+          }
+          const errData = await res.json().catch(() => null);
+          showToast(`Error updating: ${errData?.error?.message || 'Server error'}`);
+          return;
+        }
+        fetchPortfolioData();
+        showToast('Updated social link in database');
+      } else {
+        showToast('Updated locally (log in to Admin to save to database)');
       }
     } catch (err) {
       console.warn('API error updating social link:', err);
+      showToast('Network error connecting to backend');
     }
-    showToast('Updated social link');
   };
 
   const handleAddExperience = async (e: React.FormEvent) => {

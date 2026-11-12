@@ -30,7 +30,7 @@ export const frontendConfig: FrontendConfig = {
   isDevelopment: appEnv === 'development',
   isProduction: appEnv === 'production',
   appTitle: rawEnv.VITE_APP_TITLE || 'IT Graduate Portfolio | Chennai, India',
-  apiBaseUrl: rawEnv.VITE_API_BASE_URL || 'http://localhost:5000/api/v1',
+  apiBaseUrl: rawEnv.VITE_API_BASE_URL || 'https://raoof-protfolio.onrender.com/api/v1',
   enableDebug: String(rawEnv.VITE_ENABLE_DEBUG) === 'true'
 };
 
